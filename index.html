@@ -334,7 +334,12 @@ function renderReviewPanel() {
     const heading = document.createElement("b");
     heading.textContent = "પ્રશ્ન " + (index + 1) + " (" + question.type + ")";
     card.appendChild(heading);
-
+        if (question.img) {
+      const imgPreview = document.createElement("img");
+      imgPreview.src = question.img;
+      imgPreview.style.cssText = "display:block;max-width:100%;max-height:150px;margin:8px auto;border-radius:8px;border:1px solid #673ab7;object-fit:contain;";
+      card.appendChild(imgPreview);
+        }
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
     deleteBtn.textContent = "❌ કાઢી નાખો";
