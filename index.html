@@ -255,13 +255,26 @@ function cropDiagram(base64Data, box) {
     }
     const img = new Image();
     img.onload = () => {
-      const [ymin, xmin, ymax, xmax] = box;
-      const x = Math.max(0, (xmin / 1000) * img.naturalWidth);
-      const y = Math.max(0, (ymin / 1000) * img.naturalHeight);
-      const w = Math.min(img.naturalWidth - x, ((xmax - xmin) / 1000) * img.naturalWidth);
-      const h = Math.min(img.naturalHeight - y, ((ymax - ymin) / 1000) * img.naturalHeight);
+      let [ymin, xmin, ymax, xmax] = box;
 
-      if (w <= 10 || h <= 10) {
+      const boxH = ymax - ymin;
+      const boxW = xmax - xmin;
+
+      // ૧૨% વધારાની સેફ્ટી પેડિંગ (જેથી કિનારીઓ અને અંકો કપાય નહીં)
+      const padY = Math.round(boxH * 0.12);
+      const padX = Math.round(boxW * 0.12);
+
+      ymin = Math.max(0, ymin - padY);
+      xmin = Math.max(0, xmin - padX);
+      ymax = Math.min(1000, ymax + padY);
+      xmax = Math.min(1000, xmax + padX);
+
+      const x = (xmin / 1000) * img.naturalWidth;
+      const y = (ymin / 1000) * img.naturalHeight;
+      const w = ((xmax - xmin) / 1000) * img.naturalWidth;
+      const h = ((ymax - ymin) / 1000) * img.naturalHeight;
+
+      if (w <= 15 || h <= 15) {
         resolve(null);
         return;
       }
@@ -271,12 +284,13 @@ function cropDiagram(base64Data, box) {
       canvas.height = Math.round(h);
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, x, y, w, h, 0, 0, w, h);
-      resolve(canvas.toDataURL("image/jpeg", 0.85));
+      resolve(canvas.toDataURL("image/jpeg", 0.90));
     };
     img.onerror = () => resolve(null);
     img.src = base64Data;
   });
 }
+
 
 async function generateQuizFromPhotos() {
   const photos = window.selectedPhotosBase64 || [];
