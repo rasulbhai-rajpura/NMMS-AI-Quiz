@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NMMS AI ગેમ જનરેટર (ફોટો પસંદગી રિપેર)</title>
+<style>
+body { margin:0; font-family:'Segoe UI',sans-serif; min-height:100vh; background:#1a1a2e; display:flex; justify-content:center; align-items:center; }
+.card { max-width:650px; width:95%; margin:20px; padding:25px; border-radius:25px; border:3px solid #fff; background:linear-gradient(120deg,#ff9a9e,#fad0c4,#a18cd1,#fbc2eb); background-size:400% 400%; animation:flow 15s ease infinite; box-sizing:border-box; }
+@keyframes flow { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+.hidden { display:none !important; }
+h1 { color:#4a148c; font-size:18px; text-align:center; margin:0 0 10px; }
+h3 { margin:5px 0; font-size:15px; }
+button { width:100%; padding:12px; margin:6px 0; border-radius:12px; border:none; font-size:15px; font-weight:bold; cursor:pointer; color:#fff; box-sizing:border-box; transition:.2s; }
+button:disabled { opacity:.5; cursor:not-allowed; }
+.btn-orange { background:#ff9800; }
+.btn-purple { background:linear-gradient(to right,#673ab7,#9c27b0); }
+.btn-green { background:#4caf50; }
+.btn-red { background:#d32f2f; }
+.photoBox { background:white; border:3px dashed #673ab7; border-radius:15px; padding:15px; text-align:center; margin:10px 0; }
+.preview-grid { display:flex; gap:8px; overflow-x:auto; padding:8px 0; min-height:0; }
+.preview-grid img { height:70px; width:70px; flex:0 0 70px; border-radius:8px; border:2px solid #673ab7; object-fit:cover; }
+.option { padding:12px; margin:6px 0; border-radius:12px; background:#fff; cursor:pointer; border:2px solid #e0e0e0; font-weight:600; display:flex; justify-content:space-between; }
+.right { background:#2ecc71 !important; color:#fff !important; border-color:#2ecc71 !important; }
+.wrong { background:#e74c3c !important; color:#fff !important; border-color:#e74c3c !important; }
+#quizImage { max-width:100%; max-height:250px; border-radius:12px; display:none; margin-bottom:10px; border:2px solid #673ab7; }
+.loader { display:inline-block; width:16px; height:16px; border:3px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite; vertical-align:middle; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.top { display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px; color:#4a148c; }
+.q-card { background:#fff; padding:10px; border-radius:10px; margin-bottom:10px; border-left:4px solid #673ab7; font-size:13px; }
+.q-card input[type="text"] { width:100%; padding:6px; margin:3px 0; border:1px solid #ccc; border-radius:5px; font-family:inherit; box-sizing:border-box; }
+.q-card label { display:block; margin-top:5px; cursor:pointer; }
+#systemStatus { font-size:12px; color:#555; text-align:center; overflow-wrap:anywhere; }
+</style>
+</head>
+<body>
+
+<div class="card" id="teacherPanel">
+  <h1>📚 NMMS AI ગેમ જનરેટર</h1>
+
+  <div style="background:#fff3e0;padding:10px;border-radius:10px;font-size:13px;margin-bottom:10px;">
+    <b>સૂચના:</b> એક સાથે <b>બરાબર 4 ફોટા</b> પસંદ કરો. AI પ્રશ્નો બનાવશે. પછી ચેક કરીને ઉમેરો.
+    <br>મંજૂર થયેલા પ્રશ્નો: <b id="totalQCount" style="color:red;font-size:16px;">0</b>
+  </div>
+
+  <div class="photoBox">
+    <p style="font-weight:bold;color:#673ab7;margin:0 0 10px;">📷 4 ફોટા પસંદ કરો</p>
+    <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
+    <button type="button" class="btn-orange" id="choosePhotosBtn">📸 ફોટા પસંદ કરો</button>
+    <div id="photoPreview" class="preview-grid"></div>
+    <p id="photoStatus" aria-live="polite" style="font-size:12px;color:#d32f2f;font-weight:bold;margin-top:5px;"></p>
+  </div>
+
+  <button id="genBtn" class="btn-purple" type="button" disabled>🚀 AI પાસે પ્રશ્નો બનાવો</button>
+  <p id="status" style="text-align:center;font-size:13px;font-weight:bold;color:#333;min-height:20px;"></p>
+  <p id="systemStatus">ફોટા પસંદ કરવાની સુવિધા તૈયાર છે.</p>
+
+  <div id="reviewBox" class="hidden" style="margin-top:15px;background:#e8f5e9;padding:10px;border-radius:10px;">
+    <p style="font-weight:bold;color:#2e7d32;">🔍 AI એ આ પ્રશ્નો ઓળખ્યા છે. ચેક કરો અને સુધારો:</p>
+    <div id="reviewContent" style="max-height:250px;overflow-y:auto;"></div>
+    <button class="btn-green" id="approveBtn" type="button" style="margin-top:10px;">➕ બધા મંજૂર કરેલા પ્રશ્નો ઉમેરો</button>
+  </div>
+
+  <div id="finalBox" class="hidden" style="margin-top:15px;">
+    <button class="btn-red" id="publishBtn" type="button" style="font-size:16px;">🎮 આખી ગેમ બનાવો (લિંક જનરેટ કરો)</button>
+  </div>
+
+  <div id="linkBox" class="hidden" style="margin-top:15px;">
+    <p style="text-align:center;font-weight:bold;color:#2e7d32;">✅ ગેમ તૈયાર છે! આ લિંક બાળકોને મોકલો:</p>
+    <input type="text" id="shareLink" readonly style="width:100%;padding:12px;border-radius:12px;border:1px solid #ccc;background:#f5f5f5;font-size:12px;box-sizing:border-box;margin-bottom:5px;">
+    <button class="btn-green" id="copyBtn" type="button">📋 લિંક કોપી કરો</button>
+  </div>
+</div>
+
+<div class="card hidden" id="studentPanel">
+  <div class="top"><div id="progress">લોડ થઈ રહ્યું છે...</div><div id="timer">⏱</div></div>
+  <h3 id="q" style="margin:10px 0;"></h3>
+  <div style="text-align:center;"><img id="quizImage" alt="આકૃતિ"></div>
+  <div id="opts"></div>
+  <div id="resultBox" class="hidden" style="text-align:center;margin-top:15px;">
+    <h3>તમારો સ્કોર: <span id="finalScore" style="color:#2ecc71;font-size:24px;"></span></h3>
+    <p id="resultDetails" style="font-size:14px;font-weight:bold;"></p>
+    <button class="btn-purple" id="restartBtn" type="button" style="margin-top:15px;">🏠 ફરી રમો</button>
+  </div>
+</div>
+
+<!-- PHOTO PICKER: Firebase module થી સ્વતંત્ર. -->
+<script>
+(function () {
+  "use strict";
+
+  const input = document.getElementById("photoInput");
+  const chooseBtn = document.getElementById("choosePhotosBtn");
+  const preview = document.getElementById("photoPreview");
+  const photoStatus = document.getElementById("photoStatus");
+  const genBtn = document.getElementById("genBtn");
+  const systemStatus = document.getElementById("systemStatus");
+
+  // Module script પણ આ જ array વાંચશે.
+  window.selectedPhotosBase64 = [];
+
+  chooseBtn.addEventListener("click", function () {
+    input.click();
+  });
+
+  function loadAndCompress(file) {
+    return new Promise(function (resolve, reject) {
+      if (!file || !file.type || !file.type.startsWith("image/")) {
+        reject(new Error("પસંદ કરેલી ફાઇલ માન્ય ફોટો નથી."));
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onerror = function () {
+        reject(new Error("ફોટો વાંચી શકાયો નથી: " + file.name));
+      };
+
+      reader.onload = function () {
+        const img = new Image();
+
+        img.onerror = function () {
+          reject(new Error("ફોટો ખોલી શકાયો નથી: " + file.name));
+        };
+
+        img.onload = function () {
+          try {
+            const maxDimension = 1200;
+            const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(img.width * scale));
+            canvas.height = Math.max(1, Math.round(img.height * scale));
+
+            const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("આ બ્રાઉઝરમાં Canvas ઉપલબ્ધ નથી.");
+
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.78);
+
+            if (!dataUrl || dataUrl === "data:,") {
+              throw new Error("ફોટાનું રૂપાંતર થઈ શક્યું નથી.");
+            }
+            resolve(dataUrl);
+          } catch (err) {
+            reject(err);
+          }
+        };
+
+        img.src = reader.result;
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
+  input.addEventListener("change", async function (event) {
+    const files = Array.from(event.target.files || []);
+
+    window.selectedPhotosBase64 = [];
+    preview.replaceChildren();
+    genBtn.disabled = true;
+    photoStatus.style.color = "#d32f2f";
+
+    if (files.length !== 4) {
+      photoStatus.textContent = "❌ બરાબર 4 ફોટા પસંદ કરો. પસંદ થયેલા: " + files.length;
+      input.value = "";
+      return;
+    }
+
+    photoStatus.textContent = "ફોટા વાંચી રહ્યા છીએ... 0/4";
+    systemStatus.textContent = "ફોટા લોડ થઈ રહ્યા છે. કૃપા કરીને રાહ જુઓ.";
+
+    try {
+      const photos = [];
+      for (let i = 0; i < files.length; i++) {
+        const photo = await loadAndCompress(files[i]);
+        photos.push(photo);
+        photoStatus.textContent = "ફોટા વાંચી રહ્યા છીએ... " + (i + 1) + "/4";
+      }
+
+      // બધા ચાર ફોટા સફળ થયા પછી જ state commit થાય છે.
+      window.selectedPhotosBase64 = photos;
+
+      photos.forEach(function (dataUrl, index) {
+        const img = document.createElement("img");
+        img.src = dataUrl;
+        img.alt = "પસંદ કરેલો ફોટો " + (index + 1);
+        preview.appendChild(img);
+      });
+
+      photoStatus.style.color = "#2e7d32";
+      photoStatus.textContent = "✅ ચારેય ફોટા તૈયાર છે. હવે AI બટન દબાવો.";
+      genBtn.disabled = false;
+      systemStatus.textContent = "ફોટા પસંદગી સફળ: 4/4. AI સુવિધા માટે નેટવર્ક અને API પણ કાર્યરત હોવા જોઈએ.";
+    } catch (err) {
+      window.selectedPhotosBase64 = [];
+      preview.replaceChildren();
+      photoStatus.textContent = "❌ " + (err && err.message ? err.message : "ફોટા લોડ કરવામાં ભૂલ.");
+      genBtn.disabled = true;
+      systemStatus.textContent = "ફોટા લોડ નિષ્ફળ. બીજા ફોટા અજમાવો.";
+      input.value = "";
+    }
+  });
+
+  window.addEventListener("error", function (event) {
+    systemStatus.textContent = "JavaScript ભૂલ: " + (event.message || "અજ્ઞાત ભૂલ");
+  });
+})();
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Firebase web config સામાન્ય રીતે client-side હોય છે; Firestore Rules અનિવાર્ય છે.
+const firebaseConfig = {
+  apiKey: "AIzaSyAfrlNECiB_hi60qmelL2b0EvNRNT-7RM4",
+  authDomain: "nmms-quiz-262e5.firebaseapp.com",
+  projectId: "nmms-quiz-262e5",
+  storageBucket: "nmms-quiz-262e5.firebasestorage.app",
+  messagingSenderId: "449195687287",
+  appId: "1:449195687287:web:65c1a2ea249ab5a0887572"
+};
+
+let db = null;
+let firebaseReady = false;
+let tempQuestions = [];
+let masterQuestions = [];
+let quiz = [];
+let current = 0, score = 0, wrong = 0, timeLeft = 0;
+let timerId = null, answerTimeout = null, isAnswered = false, quizFinished = false;
+
+const $ = id => document.getElementById(id);
+const setStatus = message => { $("status").textContent = message; };
+
+try {
+  const app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  firebaseReady = true;
+  $("systemStatus").textContent = "ફોટા પસંદગી તૈયાર. Firebase કનેક્શન શરૂ થયું.";
+} catch (err) {
+  $("systemStatus").textContent = "ફોટા પસંદ કરી શકશો, પરંતુ Firebase શરૂ થયું નથી: " + err.message;
+  console.error("Firebase initialization:", err);
+}
+
+// IMPORTANT: Do not put Gemini API keys in this HTML.
+// Use a secured backend/Cloud Function. Replace this URL with your deployed endpoint.
+const AI_ENDPOINT = "https://nmms-ai-backend.jarinarajpura1979.workers.dev"; // e.g. https://YOUR_REGION-YOUR_PROJECT.cloudfunctions.net/generateNmmsQuestions
+
+$("genBtn").addEventListener("click", generateQuizFromPhotos);
+$("approveBtn").addEventListener("click", addApprovedQuestions);
+$("publishBtn").addEventListener("click", publishGameToFirebase);
+$("copyBtn").addEventListener("click", copyLink);
+$("restartBtn").addEventListener("click", () => location.reload());
+
+async function generateQuizFromPhotos() {
+  const photos = window.selectedPhotosBase64 || [];
+  if (photos.length !== 4) {
+    alert("પહેલા બરાબર 4 ફોટા પસંદ કરો.");
+    return;
+  }
+
+  if (!AI_ENDPOINT) {
+    alert("ફોટા સફળતાપૂર્વક લોડ થયા છે. પરંતુ AI Backend URL સેટ કરેલું નથી. સુરક્ષા માટે Gemini API Key HTML માં મૂકવામાં આવી નથી.");
+    setStatus("ફોટા તૈયાર છે; AI Backend ગોઠવવાનું બાકી છે.");
+    return;
+  }
+
+  const btn = $("genBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> AI વાંચે છે...';
+
+  try {
+    const response = await fetch(AI_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        images: photos.map(dataUrl => ({
+          mimeType: "image/jpeg",
+          data: dataUrl.split(",")[1]
+        })),
+        language: "gu",
+        exam: "NMMS",
+        questionCount: 20
+      })
+    });
+
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "AI સર્વર વિનંતી નિષ્ફળ.");
+
+    const questions = Array.isArray(payload.questions) ? payload.questions : [];
+    tempQuestions = questions.filter(q =>
+      q && typeof q.q === "string" && q.q.trim() &&
+      Array.isArray(q.o) && q.o.length === 4 &&
+      q.o.every(x => typeof x === "string" && x.trim()) &&
+      typeof q.a === "string" && q.o.includes(q.a)
+    ).map(q => ({
+      type: q.type || "સામાન્ય",
+      q: q.q.trim(),
+      o: q.o.map(x => x.trim()),
+      a: q.a.trim(),
+      img: photos[Number.isInteger(q.photoIndex) && q.photoIndex >= 0 && q.photoIndex < 4 ? q.photoIndex : 0]
+    }));
+
+    renderReviewPanel();
+    $("reviewBox").classList.remove("hidden");
+    setStatus("AI એ " + tempQuestions.length + " માન્ય પ્રશ્નો આપ્યા. ચકાસો.");
+  } catch (err) {
+    console.error(err);
+    alert("AI પ્રક્રિયામાં ભૂલ: " + err.message);
+    setStatus("❌ AI પ્રક્રિયા નિષ્ફળ.");
+  } finally {
+    btn.textContent = "🚀 AI પાસે પ્રશ્નો બનાવો";
+    btn.disabled = !(window.selectedPhotosBase64 && window.selectedPhotosBase64.length === 4);
+  }
+}
+
+function renderReviewPanel() {
+  const container = $("reviewContent");
+  container.replaceChildren();
+
+  if (!tempQuestions.length) {
+    const p = document.createElement("p");
+    p.textContent = "કોઈ માન્ય પ્રશ્નો મળ્યા નથી.";
+    p.style.color = "red";
+    container.appendChild(p);
+    return;
+  }
+
+  tempQuestions.forEach((question, index) => {
+    const card = document.createElement("div");
+    card.className = "q-card";
+
+    const heading = document.createElement("b");
+    heading.textContent = "પ્રશ્ન " + (index + 1) + " (" + question.type + ")";
+    card.appendChild(heading);
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.type = "button";
+    deleteBtn.textContent = "❌ કાઢી નાખો";
+    deleteBtn.style.cssText = "width:auto;padding:4px 8px;background:#e74c3c;font-size:12px;margin:4px;";
+    deleteBtn.addEventListener("click", () => {
+      tempQuestions.splice(index, 1);
+      renderReviewPanel();
+    });
+    card.appendChild(deleteBtn);
+
+    const qInput = document.createElement("input");
+    qInput.type = "text";
+    qInput.value = question.q;
+    qInput.addEventListener("change", () => question.q = qInput.value.trim());
+    card.appendChild(qInput);
+
+    question.o.forEach((option, optionIndex) => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:5px;margin:4px 0;";
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "correct_" + index;
+      radio.checked = option === question.a;
+      radio.style.width = "auto";
+      radio.addEventListener("change", () => question.a = question.o[optionIndex]);
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = option;
+      input.style.flex = "1";
+      input.addEventListener("change", () => {
+        const old = question.o[optionIndex];
+        question.o[optionIndex] = input.value.trim();
+        if (question.a === old) question.a = input.value.trim();
+        renderReviewPanel();
+      });
+
+      row.append(radio, input);
+      card.appendChild(row);
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function addApprovedQuestions() {
+  const valid = tempQuestions.filter(q =>
+    q.q && q.o.length === 4 && q.o.every(Boolean) &&
+    new Set(q.o).size === 4 && q.o.includes(q.a)
+  );
+
+  if (!valid.length) {
+    alert("ઉમેરવા માટે માન્ય પ્રશ્નો નથી. દરેક પ્રશ્નમાં ચાર અલગ વિકલ્પો અને એક સાચો જવાબ હોવો જોઈએ.");
+    return;
+  }
+
+  masterQuestions.push(...valid);
+  tempQuestions = [];
+  $("totalQCount").textContent = masterQuestions.length;
+  $("reviewBox").classList.add("hidden");
+  $("finalBox").classList.remove("hidden");
+  $("status").textContent = "કુલ " + masterQuestions.length + " પ્રશ્નો ઉમેરાયા.";
+  $("photoInput").value = "";
+  $("photoPreview").replaceChildren();
+  $("photoStatus").textContent = "";
+  window.selectedPhotosBase64 = [];
+  $("genBtn").disabled = true;
+}
+
+async function publishGameToFirebase() {
+  if (!masterQuestions.length) {
+    alert("પહેલા પ્રશ્નો ઉમેરો.");
+    return;
+  }
+  if (!firebaseReady || !db) {
+    alert("Firebase કનેક્શન ઉપલબ્ધ નથી. Firebase config અને નેટવર્ક તપાસો.");
+    return;
+  }
+
+  const btn = $("publishBtn");
+  btn.disabled = true;
+  btn.textContent = "ગેમ સેવ થઈ રહી છે...";
+
+  try {
+    // Firestore auto-ID avoids Math.random ID collisions.
+    const gameRef = doc(collection(db, "games"));
+    await setDoc(gameRef, {
+      questions: masterQuestions,
+      createdAt: new Date().toISOString(),
+      totalQuestions: masterQuestions.length
+    });
+
+    const link = new URL(window.location.href);
+    link.searchParams.set("game", gameRef.id);
+    $("shareLink").value = link.toString();
+    $("linkBox").classList.remove("hidden");
+    $("finalBox").classList.add("hidden");
+    setStatus("ગેમ સફળતાપૂર્વક સેવ થઈ.");
+  } catch (err) {
+    console.error(err);
+    alert("Firebase માં ગેમ સેવ ન થઈ: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🎮 આખી ગેમ બનાવો (લિંક જનરેટ કરો)";
+  }
+}
+
+async function copyLink() {
+  const value = $("shareLink").value;
+  try {
+    await navigator.clipboard.writeText(value);
+    alert("લિંક કોપી થઈ ગઈ.");
+  } catch {
+    $("shareLink").focus();
+    $("shareLink").select();
+    alert("લિંક પસંદ કરી છે. Copy વિકલ્પથી કોપી કરો.");
+  }
+}
+
+window.addEventListener("load", async () => {
+  const gameId = new URLSearchParams(location.search).get("game");
+  if (!gameId) return;
+
+  $("teacherPanel").classList.add("hidden");
+  $("studentPanel").classList.remove("hidden");
+
+  if (!firebaseReady || !db) {
+    alert("Firebase શરૂ થયું નથી. ઇન્ટરનેટ અને Firebase config તપાસો.");
+    return;
+  }
+
+  try {
+    const snapshot = await getDoc(doc(db, "games", gameId));
+    if (!snapshot.exists()) {
+      alert("આ ગેમ મળી નથી.");
+      return;
+    }
+
+    const data = snapshot.data();
+    quiz = Array.isArray(data.questions) ? data.questions : [];
+    if (!quiz.length) {
+      alert("આ ગેમમાં પ્રશ્નો નથી.");
+      return;
+    }
+
+    current = score = wrong = 0;
+    quizFinished = false;
+    timeLeft = quiz.length * 60;
+    startTimer();
+    showQuestion();
+  } catch (err) {
+    console.error(err);
+    alert("ગેમ લોડ થઈ નથી: " + err.message);
+  }
+});
+
+function shuffleArray(array) {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+function startTimer() {
+  clearInterval(timerId);
+  updateTimerDisplay();
+  timerId = setInterval(() => {
+    if (quizFinished) return;
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0) finishQuiz();
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const safe = Math.max(0, timeLeft);
+  const m = Math.floor(safe / 60);
+  const s = safe % 60;
+  $("timer").textContent = "⏱ " + m + ":" + String(s).padStart(2, "0");
+}
+
+function showQuestion() {
+  if (quizFinished) return;
+  if (current >= quiz.length) return finishQuiz();
+
+  isAnswered = false;
+  $("progress").textContent = "પ્રશ્ન " + (current + 1) + "/" + quiz.length;
+  $("q").textContent = quiz[current].q || "પ્રશ્ન ઉપલબ્ધ નથી.";
+
+  const image = $("quizImage");
+  if (quiz[current].img) {
+    image.src = quiz[current].img;
+    image.style.display = "inline-block";
+  } else {
+    image.removeAttribute("src");
+    image.style.display = "none";
+  }
+
+  const options = $("opts");
+  options.replaceChildren();
+
+  shuffleArray(quiz[current].o || []).forEach(option => {
+    const div = document.createElement("div");
+    div.className = "option";
+    div.textContent = option;
+    div.addEventListener("click", () => checkAnswer(option, div));
+    options.appendChild(div);
+  });
+}
+
+function checkAnswer(selected, element) {
+  if (isAnswered || quizFinished) return;
+  isAnswered = true;
+
+  document.querySelectorAll(".option").forEach(node => node.style.pointerEvents = "none");
+
+  const correct = quiz[current].a;
+  if (selected === correct) {
+    score++;
+    element.classList.add("right");
+  } else {
+    wrong++;
+    element.classList.add("wrong");
+    document.querySelectorAll(".option").forEach(node => {
+      if (node.textContent === correct) node.classList.add("right");
+    });
+  }
+
+  answerTimeout = setTimeout(() => {
+    if (quizFinished) return;
+    current++;
+    showQuestion();
+  }, 1200);
+}
+
+function finishQuiz() {
+  if (quizFinished) return;
+  quizFinished = true;
+  clearInterval(timerId);
+  clearTimeout(answerTimeout);
+
+  $("opts").replaceChildren();
+  $("q").textContent = "ગેમ પૂર્ણ થઈ.";
+  $("quizImage").style.display = "none";
+  $("resultBox").classList.remove("hidden");
+  $("finalScore").textContent = score + "/" + quiz.length;
+  const percent = quiz.length ? Math.round(score / quiz.length * 100) : 0;
+  $("resultDetails").textContent = "ખોટા જવાબ: " + wrong + " | ટકાવારી: " + percent + "%";
+}
+</script>
+</body>
+</html>
