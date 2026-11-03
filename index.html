@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NMMS AI ગેમ જનરેટર (ફોટો પસંદગી રિપેર)</title>
+<title>NMMS AI ગેમ જનરેટર</title>
 <style>
 body { margin:0; font-family:'Segoe UI',sans-serif; min-height:100vh; background:#1a1a2e; display:flex; justify-content:center; align-items:center; }
 .card { max-width:650px; width:95%; margin:20px; padding:25px; border-radius:25px; border:3px solid #fff; background:linear-gradient(120deg,#ff9a9e,#fad0c4,#a18cd1,#fbc2eb); background-size:400% 400%; animation:flow 15s ease infinite; box-sizing:border-box; }
@@ -23,7 +23,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 .option { padding:12px; margin:6px 0; border-radius:12px; background:#fff; cursor:pointer; border:2px solid #e0e0e0; font-weight:600; display:flex; justify-content:space-between; }
 .right { background:#2ecc71 !important; color:#fff !important; border-color:#2ecc71 !important; }
 .wrong { background:#e74c3c !important; color:#fff !important; border-color:#e74c3c !important; }
-#quizImage { max-width:100%; max-height:250px; border-radius:12px; display:none; margin-bottom:10px; border:2px solid #673ab7; }
+#quizImage { max-width:100%; max-height:220px; border-radius:12px; display:none; margin:0 auto 10px; border:2px solid #673ab7; background:#fff; object-fit:contain; }
 .loader { display:inline-block; width:16px; height:16px; border:3px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite; vertical-align:middle; }
 @keyframes spin { to{transform:rotate(360deg)} }
 .top { display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px; color:#4a148c; }
@@ -39,7 +39,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
   <h1>📚 NMMS AI ગેમ જનરેટર</h1>
 
   <div style="background:#fff3e0;padding:10px;border-radius:10px;font-size:13px;margin-bottom:10px;">
-    <b>સૂચના:</b> એક સાથે <b>બરાબર 4 ફોટા</b> પસંદ કરો. AI પ્રશ્નો બનાવશે. પછી ચેક કરીને ઉમેરો.
+    <b>સૂચના:</b> એક સાથે <b>બરાબર 4 ફોટા</b> પસંદ કરો. AI પ્રશ્નો અને આકૃતિઓ તૈયાર કરશે.
     <br>મંજૂર થયેલા પ્રશ્નો: <b id="totalQCount" style="color:red;font-size:16px;">0</b>
   </div>
 
@@ -84,7 +84,6 @@ button:disabled { opacity:.5; cursor:not-allowed; }
   </div>
 </div>
 
-<!-- PHOTO PICKER: Firebase module થી સ્વતંત્ર. -->
 <script>
 (function () {
   "use strict";
@@ -96,7 +95,6 @@ button:disabled { opacity:.5; cursor:not-allowed; }
   const genBtn = document.getElementById("genBtn");
   const systemStatus = document.getElementById("systemStatus");
 
-  // Module script પણ આ જ array વાંચશે.
   window.selectedPhotosBase64 = [];
 
   chooseBtn.addEventListener("click", function () {
@@ -178,7 +176,6 @@ button:disabled { opacity:.5; cursor:not-allowed; }
         photoStatus.textContent = "ફોટા વાંચી રહ્યા છીએ... " + (i + 1) + "/4";
       }
 
-      // બધા ચાર ફોટા સફળ થયા પછી જ state commit થાય છે.
       window.selectedPhotosBase64 = photos;
 
       photos.forEach(function (dataUrl, index) {
@@ -191,7 +188,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
       photoStatus.style.color = "#2e7d32";
       photoStatus.textContent = "✅ ચારેય ફોટા તૈયાર છે. હવે AI બટન દબાવો.";
       genBtn.disabled = false;
-      systemStatus.textContent = "ફોટા પસંદગી સફળ: 4/4. AI સુવિધા માટે નેટવર્ક અને API પણ કાર્યરત હોવા જોઈએ.";
+      systemStatus.textContent = "ફોટા પસંદગી સફળ: 4/4.";
     } catch (err) {
       window.selectedPhotosBase64 = [];
       preview.replaceChildren();
@@ -212,7 +209,6 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Firebase web config સામાન્ય રીતે client-side હોય છે; Firestore Rules અનિવાર્ય છે.
 const firebaseConfig = {
   apiKey: "AIzaSyAfrlNECiB_hi60qmelL2b0EvNRNT-7RM4",
   authDomain: "nmms-quiz-262e5.firebaseapp.com",
@@ -239,19 +235,48 @@ try {
   firebaseReady = true;
   $("systemStatus").textContent = "ફોટા પસંદગી તૈયાર. Firebase કનેક્શન શરૂ થયું.";
 } catch (err) {
-  $("systemStatus").textContent = "ફોટા પસંદ કરી શકશો, પરંતુ Firebase શરૂ થયું નથી: " + err.message;
+  $("systemStatus").textContent = "Firebase શરૂ થયું નથી: " + err.message;
   console.error("Firebase initialization:", err);
 }
 
-// IMPORTANT: Do not put Gemini API keys in this HTML.
-// Use a secured backend/Cloud Function. Replace this URL with your deployed endpoint.
-const AI_ENDPOINT = "https://nmms-ai-backend.jarinarajpura1979.workers.dev"; // e.g. https://YOUR_REGION-YOUR_PROJECT.cloudfunctions.net/generateNmmsQuestions
+const AI_ENDPOINT = "https://nmms-ai-backend.jarinarajpura1979.workers.dev";
 
 $("genBtn").addEventListener("click", generateQuizFromPhotos);
 $("approveBtn").addEventListener("click", addApprovedQuestions);
 $("publishBtn").addEventListener("click", publishGameToFirebase);
 $("copyBtn").addEventListener("click", copyLink);
 $("restartBtn").addEventListener("click", () => location.reload());
+
+function cropDiagram(base64Data, box) {
+  return new Promise((resolve) => {
+    if (!box || !Array.isArray(box) || box.length !== 4) {
+      resolve(null);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      const [ymin, xmin, ymax, xmax] = box;
+      const x = Math.max(0, (xmin / 1000) * img.naturalWidth);
+      const y = Math.max(0, (ymin / 1000) * img.naturalHeight);
+      const w = Math.min(img.naturalWidth - x, ((xmax - xmin) / 1000) * img.naturalWidth);
+      const h = Math.min(img.naturalHeight - y, ((ymax - ymin) / 1000) * img.naturalHeight);
+
+      if (w <= 10 || h <= 10) {
+        resolve(null);
+        return;
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(w);
+      canvas.height = Math.round(h);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, x, y, w, h, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => resolve(null);
+    img.src = base64Data;
+  });
+}
 
 async function generateQuizFromPhotos() {
   const photos = window.selectedPhotosBase64 || [];
@@ -260,15 +285,10 @@ async function generateQuizFromPhotos() {
     return;
   }
 
-  if (!AI_ENDPOINT) {
-    alert("ફોટા સફળતાપૂર્વક લોડ થયા છે. પરંતુ AI Backend URL સેટ કરેલું નથી. સુરક્ષા માટે Gemini API Key HTML માં મૂકવામાં આવી નથી.");
-    setStatus("ફોટા તૈયાર છે; AI Backend ગોઠવવાનું બાકી છે.");
-    return;
-  }
-
   const btn = $("genBtn");
   btn.disabled = true;
   btn.innerHTML = '<span class="loader"></span> AI વાંચે છે...';
+  setStatus("AI ફોટા વાંચીને પ્રશ્નો અને આકૃતિઓ તૈયાર કરી રહ્યું છે...");
 
   try {
     const response = await fetch(AI_ENDPOINT, {
@@ -278,30 +298,40 @@ async function generateQuizFromPhotos() {
         images: photos.map(dataUrl => ({
           mimeType: "image/jpeg",
           data: dataUrl.split(",")[1]
-        })),
-        language: "gu",
-        exam: "NMMS",
-        questionCount: 20
+        }))
       })
     });
 
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "AI સર્વર વિનંતી નિષ્ફળ.");
 
-    const questions = Array.isArray(payload.questions) ? payload.questions : [];
-    tempQuestions = questions.filter(q =>
+    const rawQuestions = Array.isArray(payload.questions) ? payload.questions : [];
+    const validQuestions = rawQuestions.filter(q =>
       q && typeof q.q === "string" && q.q.trim() &&
       Array.isArray(q.o) && q.o.length === 4 &&
       q.o.every(x => typeof x === "string" && x.trim()) &&
       typeof q.a === "string" && q.o.includes(q.a)
-    ).map(q => ({
-      type: q.type || "સામાન્ય",
-      q: q.q.trim(),
-      o: q.o.map(x => x.trim()),
-      a: q.a.trim(),
-      img: photos[Number.isInteger(q.photoIndex) && q.photoIndex >= 0 && q.photoIndex < 4 ? q.photoIndex : 0]
-    }));
+    );
 
+    const processed = [];
+    for (const q of validQuestions) {
+      let cropped = null;
+      const idx = (Number.isInteger(q.photoIndex) && q.photoIndex >= 0 && q.photoIndex < 4) ? q.photoIndex : 0;
+      
+      if (q.has_diagram && q.box && photos[idx]) {
+        cropped = await cropDiagram(photos[idx], q.box);
+      }
+
+      processed.push({
+        type: q.type || "સામાન્ય",
+        q: q.q.trim(),
+        o: q.o.map(x => x.trim()),
+        a: q.a.trim(),
+        img: cropped
+      });
+    }
+
+    tempQuestions = processed;
     renderReviewPanel();
     $("reviewBox").classList.remove("hidden");
     setStatus("AI એ " + tempQuestions.length + " માન્ય પ્રશ્નો આપ્યા. ચકાસો.");
@@ -334,12 +364,14 @@ function renderReviewPanel() {
     const heading = document.createElement("b");
     heading.textContent = "પ્રશ્ન " + (index + 1) + " (" + question.type + ")";
     card.appendChild(heading);
-        if (question.img) {
+
+    if (question.img) {
       const imgPreview = document.createElement("img");
       imgPreview.src = question.img;
-      imgPreview.style.cssText = "display:block;max-width:100%;max-height:150px;margin:8px auto;border-radius:8px;border:1px solid #673ab7;object-fit:contain;";
+      imgPreview.style.cssText = "display:block;max-width:100%;max-height:140px;margin:8px auto;border-radius:8px;border:1px solid #673ab7;object-fit:contain;background:#f9f9f9;";
       card.appendChild(imgPreview);
-        }
+    }
+
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
     deleteBtn.textContent = "❌ કાઢી નાખો";
@@ -415,7 +447,7 @@ async function publishGameToFirebase() {
     return;
   }
   if (!firebaseReady || !db) {
-    alert("Firebase કનેક્શન ઉપલબ્ધ નથી. Firebase config અને નેટવર્ક તપાસો.");
+    alert("Firebase કનેક્શન ઉપલબ્ધ નથી.");
     return;
   }
 
@@ -424,7 +456,6 @@ async function publishGameToFirebase() {
   btn.textContent = "ગેમ સેવ થઈ રહી છે...";
 
   try {
-    // Firestore auto-ID avoids Math.random ID collisions.
     const gameRef = doc(collection(db, "games"));
     await setDoc(gameRef, {
       questions: masterQuestions,
@@ -467,7 +498,7 @@ window.addEventListener("load", async () => {
   $("studentPanel").classList.remove("hidden");
 
   if (!firebaseReady || !db) {
-    alert("Firebase શરૂ થયું નથી. ઇન્ટરનેટ અને Firebase config તપાસો.");
+    alert("Firebase શરૂ થયું નથી.");
     return;
   }
 
