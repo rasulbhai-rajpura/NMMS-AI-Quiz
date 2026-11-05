@@ -22,7 +22,6 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .btn-red { background: #d32f2f; }
 .btn-whatsapp { background: #25D366; }
 .btn-blue { background: #2196f3; }
-.btn-small { padding: 10px; font-size: 13px; }
 .photoBox { background: white; border: 3px dashed #673ab7; border-radius: 15px; padding: 15px; text-align: center; margin: 10px 0; }
 .preview-grid { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0; }
 .preview-item { position: relative; flex: 0 0 70px; }
@@ -70,8 +69,8 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 
   <div class="photoBox">
     <p style="font-weight:bold;color:#673ab7;margin:0 0 10px;">📷 ફોટા પસંદ કરો (૧ થી ૮)</p>
-    <input type="file" id="photoInput" accept="image/*" multiple style="display:none">
-    <button type="button" class="btn-orange" id="choosePhotosBtn">📸 ફોટા પસંદ કરો</button>
+    <!-- File input ને થોડો દેખાય તેવો રાખ્યો છે જેથી બટન કામ ન કરે તો પણ ક્લિક થાય -->
+    <input type="file" id="photoInput" accept="image/*" multiple style="width:100%; padding:10px; margin-bottom:10px; border:2px solid #ff9800; border-radius:10px; background:#fff;">
     <div id="photoPreview" class="preview-grid"></div>
     <p id="photoStatus" aria-live="polite" style="font-size:12px;color:#d32f2f;font-weight:bold;margin-top:5px;"></p>
   </div>
@@ -149,9 +148,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ==========================================
-// 1. અહીં તમારી ImgBB API કી પેસ્ટ કરો
+// અહીં તમારી ImgBB API કી પેસ્ટ કરો
 // ==========================================
-const IMGBB_API_KEY = if (IMGBB_API_KEY === "82580a0e88c08085e2ac2b322496bb16") {;
+const IMGBB_API_KEY = "તમારી_કી_અહીં_પેસ્ટ_કરો";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAfrlNECiB_hi60qmelL2b0EvNRNT-7RM4",
@@ -214,13 +213,6 @@ function stripLabel(text) {
 // ઇમેજ પ્રોસેસિંગ
 // ==========================================
 const input = $("photoInput");
-const chooseBtn = $("choosePhotosBtn");
-
-// આ નવો કોડ છે જે ફોટા પસંદ કરવાનું બટન કામ કરાવશે
-chooseBtn.onclick = function(e) {
-  e.preventDefault(); // બ્રાઉઝરને બ્લોક કરતું અટકાવે છે
-  input.click();
-};
 
 async function compressImage(file) {
   let bitmap = await createImageBitmap(file).catch(() => null);
@@ -389,11 +381,11 @@ $("approveBtn").addEventListener("click", () => {
 });
 
 // ==========================================
-// ImgBB અપલોડ લોજિક (કાર્ડ વગરનો ઉપાય)
+// ImgBB અપલોડ લોજિક
 // ==========================================
 $("publishBtn").addEventListener("click", async () => {
   if (masterQuestions.length === 0) return showToast("પ્રશ્નો ઉમેરો.", "warn");
-  if (IMGBB_API_KEY === "82580a0e88c08085e2ac2b322496bb16") {
+  if (IMGBB_API_KEY === "તમારી_કી_અહીં_પેસ્ટ_કરો" || !IMGBB_API_KEY) {
     return showToast("કોડમાં ImgBB API કી પેસ્ટ કરો.", "error", 5000);
   }
 
@@ -405,13 +397,12 @@ $("publishBtn").addEventListener("click", async () => {
     const gameRef = doc(collection(db, "games"));
     const gameId = gameRef.id;
 
-    // ઈમેજને ImgBB પર અપલોડ કરો
     const finalQuestions = await Promise.all(masterQuestions.map(async (q, i) => {
       if (!q.img || !q.img.startsWith("data:")) return { ...q, img: q.img || null };
       
       setStatus(`આકૃતિ ${i + 1}/${masterQuestions.length} અપલોડ...`);
       const formData = new FormData();
-      formData.append("image", q.img.split(",")[1]); // base64 ડેટા
+      formData.append("image", q.img.split(",")[1]);
       
       const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
         method: "POST",
@@ -423,7 +414,6 @@ $("publishBtn").addEventListener("click", async () => {
       return { ...q, img: imgData.data.url };
     }));
 
-    // ફાયરસ્ટોરમાં સેવ કરો
     await setDoc(gameRef, { questions: finalQuestions, createdAt: new Date().toISOString() });
 
     const shareUrl = `${window.location.origin}${window.location.pathname}?game=${gameId}`;
