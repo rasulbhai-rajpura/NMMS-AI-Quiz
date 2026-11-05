@@ -585,10 +585,12 @@ async function callAI(photos) {
       return await response.json();
     } catch (err) {
       lastErr = err.name === "AbortError" ? new Error("AI સમયસીમા પાર.") : err;
-      if (attempt < AI_MAX_RETRIES) {
-        setStatus(`ફરી પ્રયત્ન ${attempt + 1}/${AI_MAX_RETRIES}...`);
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-      }
+     // સુધારેલું: 5 સેકન્ડ, પછી 10 સેકન્ડ, પછી 20 સેકન્ડ
+if (attempt < AI_MAX_RETRIES) {
+  const waitTime = 5000 * Math.pow(2, attempt); // 5s, 10s, 20s
+  setStatus(`AI વ્યસ્ત છે. ${waitTime / 1000} સેકન્ડ પછી ફરી પ્રયત્ન...`);
+  await new Promise(r => setTimeout(r, waitTime));
+}
     }
   }
   throw lastErr || new Error("AI નિષ્ફળ.");
