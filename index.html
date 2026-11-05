@@ -210,7 +210,7 @@ try {
   db = getFirestore(app);
   firebaseReady = true;
 } catch (err) {
-  console.error(err);
+  console.error("Firebase init error:", err);
 }
 
 const AI_ENDPOINT = "https://nmms-ai-backend.jarinarajpura1979.workers.dev";
@@ -233,7 +233,6 @@ function cropDiagram(base64Data, box) {
       const boxH = ymax - ymin;
       const boxW = xmax - xmin;
 
-      // સંતુલિત પેડિંગ: ઉપર-નીચે 2% અને ડાબે-જમણે 4% (જેથી કોઈ વિકલ્પ ન કપાય)
       const padY = Math.round(boxH * 0.02);
       const padX = Math.round(boxW * 0.04);
 
@@ -448,65 +447,6 @@ async function copyLink() {
   }
 }
 
-window.addEventListener("load", async () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const gameId = urlParams.get("game");
-
-  // જો URL માં game ID ન હોય તો શિક્ષક પેનલ જ ચાલુ રહેશે
-  if (!gameId) return;
-
-  // જો લિંકમાં game ID હોય, તો સૌથી પહેલાં શિક્ષક પેનલ સંતાડીને વિદ્યાર્થી પેનલ જ બતાવો
-  $("teacherPanel").classList.add("hidden");
-  $("studentPanel").classList.remove("hidden");
-  $("progress").textContent = "ગેમ લોડ થઈ રહી છે, કૃપા કરીને રાહ જુઓ...";
-  $("q").textContent = "પ્રશ્નો ડાઉનલોડ થઈ રહ્યા છે...";
-
-  // Firebase તૈયાર થવાની રાહ જોવી (સેફ્ટી લૂપ)
-  let retryCount = 0;
-  while ((!firebaseReady || !db) && retryCount < 10) {
-    await new Promise(r => setTimeout(r, 300));
-    retryCount++;
-  }
-
-  if (!firebaseReady || !db) {
-    alert("Firebase સર્વર સાથે જોડાણ થઈ શક્યું નથી. પેજ રીફ્રેશ કરો.");
-    $("progress").textContent = "ભૂલ: Firebase કનેક્શન મળ્યું નથી.";
-    return;
-  }
-
-  try {
-    const gameDoc = await getDoc(doc(db, "games", gameId));
-    if (!gameDoc.exists()) {
-      alert("આ આઈડી વાળી ગેમ મળી નથી. લિંક ચકાસો.");
-      $("progress").textContent = "ગેમ મળી નથી.";
-      return;
-    }
-
-    const data = gameDoc.data();
-    quiz = Array.isArray(data.questions) ? data.questions : [];
-
-    if (!quiz.length) {
-      alert("આ ગેમમાં કોઈ પ્રશ્નો સેવ થયેલા નથી.");
-      $("progress").textContent = "પ્રશ્નો ઉપલબ્ધ નથી.";
-      return;
-    }
-
-    // ક્વિઝ શરૂ કરો
-    current = 0;
-    score = 0;
-    wrong = 0;
-    quizFinished = false;
-    timeLeft = quiz.length * 60;
-
-    startTimer();
-    showQuestion();
-  } catch (err) {
-    console.error("Game load error:", err);
-    alert("ગેમ ખોલવામાં ભૂલ આવી: " + err.message);
-    $("progress").textContent = "લોડ કરવામાં ભૂલ.";
-  }
-});
-
 function shuffleArray(array) {
   const result = [...array];
   for (let i = result.length - 1; i > 0; i--) {
@@ -534,7 +474,6 @@ function updateTimerDisplay() {
   $("timer").textContent = "⏱ " + m + ":" + String(s).padStart(2, "0");
 }
 
-// આગળ લાગેલા (A), (B), A., B. જેવા લેબલ હટાવવાનું હેલ્પર ફંક્શન
 function stripLabel(text) {
   if (!text) return "";
   return text.replace(/^[\(\[]?[A-Da-d][\)\]\.\-:]\s*/, "").trim();
@@ -566,24 +505,20 @@ function showQuestion() {
   let itemsToRender = [];
 
   if (isDiagramQ) {
-    // આકૃતિવાળા પ્રશ્નોમાં મૂળ ઓપ્શન ક્રમ જાળવી રાખવો
-    itemsToRender = (quiz[current].o || []).map((rawText, idx) => ({
+    itemsToRender = (quiz[current].o || []).map((rawText) => ({
       displayText: rawText,
-      rawValue: rawText
+      cleanValue: stripLabel(rawText)
     }));
   } else {
-    // લખાણવાળા પ્રશ્નો: માત્ર અંદરનું લખાણ શફલ કરવું
     const cleanTexts = (quiz[current].o || []).map(rawText => ({
-      cleanText: stripLabel(rawText),
-      rawValue: rawText
+      cleanText: stripLabel(rawText)
     }));
 
     const shuffledTexts = shuffleArray(cleanTexts);
 
-    // શફલ થયેલા લખાણ આગળ ક્રમશઃ (A), (B), (C), (D) જોડવું
     itemsToRender = shuffledTexts.map((item, idx) => ({
       displayText: `${labels[idx]} ${item.cleanText}`,
-      rawValue: item.rawValue
+      cleanValue: item.cleanText
     }));
   }
 
@@ -591,45 +526,34 @@ function showQuestion() {
     const div = document.createElement("div");
     div.className = "option";
     div.textContent = item.displayText;
-    div.dataset.value = item.rawValue; // સાચા જવાબની ચકાસણી માટે મૂળ વેલ્યુ
-    div.addEventListener("click", () => checkAnswer(item.rawValue, div));
+    div.dataset.clean = item.cleanValue;
+    div.addEventListener("click", () => checkAnswer(item.cleanValue, div));
     optionsContainer.appendChild(div);
   });
 }
 
-function checkAnswer(selectedValue, element) {
+function checkAnswer(selectedClean, element) {
   if (isAnswered || quizFinished) return;
   isAnswered = true;
 
   const allOptionNodes = document.querySelectorAll(".option");
   allOptionNodes.forEach(node => node.style.pointerEvents = "none");
 
-  const correctValue = quiz[current].a;
+  const correctClean = stripLabel(quiz[current].a);
 
-  // સરખામણી કરતી વખતે આગળ-પાછળની સ્પેસ અને લેબલની ચોકસાઈ
-  const isMatch = selectedValue === correctValue || 
-                  stripLabel(selectedValue) === stripLabel(correctValue);
-
-  if (isMatch) {
+  if (selectedClean === correctClean) {
     score++;
     element.classList.add("right");
   } else {
     wrong++;
     element.classList.add("wrong");
     allOptionNodes.forEach(node => {
-      if (node.dataset.value === correctValue || 
-          stripLabel(node.dataset.value) === stripLabel(correctValue)) {
+      if (node.dataset.clean === correctClean) {
         node.classList.add("right");
       }
     });
   }
 
-  answerTimeout = setTimeout(() => {
-    if (quizFinished) return;
-    current++;
-    showQuestion();
-  }, 1200);
-}
   answerTimeout = setTimeout(() => {
     if (quizFinished) return;
     current++;
@@ -650,6 +574,63 @@ function finishQuiz() {
   $("finalScore").textContent = score + "/" + quiz.length;
   const percent = quiz.length ? Math.round(score / quiz.length * 100) : 0;
   $("resultDetails").textContent = "ખોટા જવાબ: " + wrong + " | ટકાવારી: " + percent + "%";
+}
+
+async function initGame() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const gameId = urlParams.get("game");
+
+  if (!gameId) return;
+
+  $("teacherPanel").classList.add("hidden");
+  $("studentPanel").classList.remove("hidden");
+  $("progress").textContent = "ગેમ લોડ થઈ રહી છે...";
+  $("q").textContent = "પ્રશ્નો ડાઉનલોડ થઈ રહ્યા છે...";
+
+  let retryCount = 0;
+  while ((!firebaseReady || !db) && retryCount < 10) {
+    await new Promise(r => setTimeout(r, 300));
+    retryCount++;
+  }
+
+  if (!firebaseReady || !db) {
+    alert("Firebase સર્વર સાથે જોડાણ થઈ શક્યું નથી.");
+    return;
+  }
+
+  try {
+    const gameDoc = await getDoc(doc(db, "games", gameId));
+    if (!gameDoc.exists()) {
+      alert("આ ગેમ મળી નથી.");
+      return;
+    }
+
+    const data = gameDoc.data();
+    quiz = Array.isArray(data.questions) ? data.questions : [];
+
+    if (!quiz.length) {
+      alert("કોઈ પ્રશ્નો સેવ થયેલા નથી.");
+      return;
+    }
+
+    current = 0;
+    score = 0;
+    wrong = 0;
+    quizFinished = false;
+    timeLeft = quiz.length * 60;
+
+    startTimer();
+    showQuestion();
+  } catch (err) {
+    console.error("Game load error:", err);
+    alert("ગેમ ખોલવામાં ભૂલ: " + err.message);
+  }
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded", initGame);
+} else {
+  initGame();
 }
 </script>
 </body>
