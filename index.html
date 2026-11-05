@@ -214,7 +214,13 @@ function stripLabel(text) {
 // ઇમેજ પ્રોસેસિંગ
 // ==========================================
 const input = $("photoInput");
-$("choosePhotosBtn").addEventListener("click", () => input.click());
+const chooseBtn = $("choosePhotosBtn");
+
+// આ નવો કોડ છે જે ફોટા પસંદ કરવાનું બટન કામ કરાવશે
+chooseBtn.onclick = function(e) {
+  e.preventDefault(); // બ્રાઉઝરને બ્લોક કરતું અટકાવે છે
+  input.click();
+};
 
 async function compressImage(file) {
   let bitmap = await createImageBitmap(file).catch(() => null);
