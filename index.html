@@ -517,7 +517,11 @@ function showQuestion() {
   const options = $("opts");
   options.replaceChildren();
 
-  shuffleArray(quiz[current].o || []).forEach(option => {
+  // નિયમ: જો આકૃતિવાળો પ્રશ્ન હોય તો ઓપ્શન્સ ક્યારેય શફલ નહિ થાય, સીધા (A), (B), (C), (D) ક્રમમાં જ રહેશે
+  const isDiagramQ = Boolean(quiz[current].img);
+  const displayOptions = isDiagramQ ? (quiz[current].o || []) : shuffleArray(quiz[current].o || []);
+
+  displayOptions.forEach(option => {
     const div = document.createElement("div");
     div.className = "option";
     div.textContent = option;
