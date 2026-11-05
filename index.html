@@ -23,8 +23,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 .option { padding:12px; margin:6px 0; border-radius:12px; background:#fff; cursor:pointer; border:2px solid #e0e0e0; font-weight:600; display:flex; justify-content:space-between; }
 .right { background:#2ecc71 !important; color:#fff !important; border-color:#2ecc71 !important; }
 .wrong { background:#e74c3c !important; color:#fff !important; border-color:#e74c3c !important; }
-.svg-container { max-width:100%; background:#fff; border-radius:12px; padding:8px; margin:0 auto 10px; border:2px solid #673ab7; display:flex; justify-content:center; align-items:center; }
-.svg-container svg { max-width:100%; height:auto; max-height:220px; }
+#quizImage { max-width:100%; max-height:260px; border-radius:12px; display:none; margin:0 auto 10px; border:2px solid #673ab7; background:#fff; object-fit:contain; }
 .loader { display:inline-block; width:16px; height:16px; border:3px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite; vertical-align:middle; }
 @keyframes spin { to{transform:rotate(360deg)} }
 .top { display:flex; justify-content:space-between; font-weight:bold; margin-bottom:10px; color:#4a148c; }
@@ -40,7 +39,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
   <h1>📚 NMMS AI ગેમ જનરેટર</h1>
 
   <div style="background:#fff3e0;padding:10px;border-radius:10px;font-size:13px;margin-bottom:10px;">
-    <b>સૂચના:</b> ૧ થી ૮ સુધી ગમે તેટલા ફોટા પસંદ કરો. AI પ્રશ્નો અને આકૃતિઓ તૈયાર કરશે.
+    <b>સૂચના:</b> ૧ થી ૮ સુધી ગમે તેટલા ફોટા પસંદ કરો. AI પુસ્તકના મૂળ પ્રશ્નો અને આકૃતિઓ તૈયાર કરશે.
     <br>મંજૂર થયેલા પ્રશ્નો: <b id="totalQCount" style="color:red;font-size:16px;">0</b>
   </div>
 
@@ -57,7 +56,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
   <p id="systemStatus">ફોટા પસંદ કરવાની સુવિધા તૈયાર છે.</p>
 
   <div id="reviewBox" class="hidden" style="margin-top:15px;background:#e8f5e9;padding:10px;border-radius:10px;">
-    <p style="font-weight:bold;color:#2e7d32;">🔍 AI એ તૈયાર કરેલા પ્રશ્નો અને આકૃતિઓ:</p>
+    <p style="font-weight:bold;color:#2e7d32;">🔍 AI એ ઓળખેલા પ્રશ્નો અને મૂળ આકૃતિઓ:</p>
     <div id="reviewContent" style="max-height:300px;overflow-y:auto;"></div>
     <button class="btn-green" id="approveBtn" type="button" style="margin-top:10px;">➕ બધા મંજૂર કરેલા પ્રશ્નો ઉમેરો</button>
   </div>
@@ -76,7 +75,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 <div class="card hidden" id="studentPanel">
   <div class="top"><div id="progress">લોડ થઈ રહ્યું છે...</div><div id="timer">⏱</div></div>
   <h3 id="q" style="margin:10px 0;"></h3>
-  <div id="quizDiagram" class="svg-container hidden"></div>
+  <div style="text-align:center;"><img id="quizImage" alt="મૂળ આકૃતિ"></div>
   <div id="opts"></div>
   <div id="resultBox" class="hidden" style="text-align:center;margin-top:15px;">
     <h3>તમારો સ્કોર: <span id="finalScore" style="color:#2ecc71;font-size:24px;"></span></h3>
@@ -105,43 +104,32 @@ button:disabled { opacity:.5; cursor:not-allowed; }
   function loadAndCompress(file) {
     return new Promise(function (resolve, reject) {
       if (!file || !file.type || !file.type.startsWith("image/")) {
-        reject(new Error("પસંદ કરેલી ફાઇલ માન્ય ફોટો નથી."));
+        reject(new Error("માન્ય ફોટો નથી."));
         return;
       }
 
       const reader = new FileReader();
-      reader.onerror = function () {
-        reject(new Error("ફોટો વાંચી શકાયો નથી: " + file.name));
-      };
-
+      reader.onerror = () => reject(new Error("ફોટો વાંચી શકાયો નથી."));
       reader.onload = function () {
         const img = new Image();
-        img.onerror = function () {
-          reject(new Error("ફોટો ખોલી શકાયો નથી: " + file.name));
-        };
-
+        img.onerror = () => reject(new Error("ફોટો ખોલી શકાયો નથી."));
         img.onload = function () {
           try {
-            const maxDimension = 1200;
+            const maxDimension = 1400;
             const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
             const canvas = document.createElement("canvas");
             canvas.width = Math.max(1, Math.round(img.width * scale));
             canvas.height = Math.max(1, Math.round(img.height * scale));
 
             const ctx = canvas.getContext("2d");
-            if (!ctx) throw new Error("આ બ્રાઉઝરમાં Canvas ઉપલબ્ધ નથી.");
-
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            const dataUrl = canvas.toDataURL("image/jpeg", 0.78);
-            resolve(dataUrl);
+            resolve(canvas.toDataURL("image/jpeg", 0.82));
           } catch (err) {
             reject(err);
           }
         };
-
         img.src = reader.result;
       };
-
       reader.readAsDataURL(file);
     });
   }
@@ -156,18 +144,14 @@ button:disabled { opacity:.5; cursor:not-allowed; }
 
     if (files.length === 0) {
       photoStatus.textContent = "❌ ઓછામાં ઓછો ૧ ફોટો પસંદ કરો.";
-      input.value = "";
       return;
     }
-
     if (files.length > 8) {
-      photoStatus.textContent = "❌ એક સાથે વધુમાં વધુ 8 ફોટા પસંદ કરી શકાય છે.";
-      input.value = "";
+      photoStatus.textContent = "❌ વધુમાં વધુ 8 ફોટા પસંદ કરી શકાય છે.";
       return;
     }
 
     photoStatus.textContent = "ફોટા વાંચી રહ્યા છીએ... 0/" + files.length;
-    systemStatus.textContent = "ફોટા લોડ થઈ રહ્યા છે. કૃપા કરીને રાહ જુઓ.";
 
     try {
       const photos = [];
@@ -178,8 +162,7 @@ button:disabled { opacity:.5; cursor:not-allowed; }
       }
 
       window.selectedPhotosBase64 = photos;
-
-      photos.forEach(function (dataUrl, index) {
+      photos.forEach((dataUrl, index) => {
         const img = document.createElement("img");
         img.src = dataUrl;
         img.alt = "ફોટો " + (index + 1);
@@ -189,19 +172,11 @@ button:disabled { opacity:.5; cursor:not-allowed; }
       photoStatus.style.color = "#2e7d32";
       photoStatus.textContent = "✅ કુલ " + photos.length + " ફોટા તૈયાર છે. હવે AI બટન દબાવો.";
       genBtn.disabled = false;
-      systemStatus.textContent = "ફોટા પસંદગી સફળ: " + photos.length + " ફોટા.";
+      systemStatus.textContent = "ફોટા તૈયાર છે: " + photos.length;
     } catch (err) {
-      window.selectedPhotosBase64 = [];
-      preview.replaceChildren();
-      photoStatus.textContent = "❌ " + (err && err.message ? err.message : "ફોટા લોડ કરવામાં ભૂલ.");
+      photoStatus.textContent = "❌ ભૂલ: " + err.message;
       genBtn.disabled = true;
-      systemStatus.textContent = "ફોટા લોડ નિષ્ફળ.";
-      input.value = "";
     }
-  });
-
-  window.addEventListener("error", function (event) {
-    systemStatus.textContent = "JavaScript ભૂલ: " + (event.message || "અજ્ઞાત ભૂલ");
   });
 })();
 </script>
@@ -234,9 +209,8 @@ try {
   const app = initializeApp(firebaseConfig);
   db = getFirestore(app);
   firebaseReady = true;
-  $("systemStatus").textContent = "ફોટા પસંદગી તૈયાર. Firebase કનેક્શન શરૂ થયું.";
 } catch (err) {
-  $("systemStatus").textContent = "Firebase શરૂ થયું નથી: " + err.message;
+  console.error(err);
 }
 
 const AI_ENDPOINT = "https://nmms-ai-backend.jarinarajpura1979.workers.dev";
@@ -247,17 +221,57 @@ $("publishBtn").addEventListener("click", publishGameToFirebase);
 $("copyBtn").addEventListener("click", copyLink);
 $("restartBtn").addEventListener("click", () => location.reload());
 
+function cropDiagram(base64Data, box) {
+  return new Promise((resolve) => {
+    if (!box || !Array.isArray(box) || box.length !== 4) {
+      resolve(null);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      let [ymin, xmin, ymax, xmax] = box;
+      const boxH = ymax - ymin;
+      const boxW = xmax - xmin;
+
+      // સંતુલિત પેડિંગ: ઉપર-નીચે 2% અને ડાબે-જમણે 4% (જેથી કોઈ વિકલ્પ ન કપાય)
+      const padY = Math.round(boxH * 0.02);
+      const padX = Math.round(boxW * 0.04);
+
+      ymin = Math.max(0, ymin - padY);
+      xmin = Math.max(0, xmin - padX);
+      ymax = Math.min(1000, ymax + padY);
+      xmax = Math.min(1000, xmax + padX);
+
+      const x = (xmin / 1000) * img.naturalWidth;
+      const y = (ymin / 1000) * img.naturalHeight;
+      const w = ((xmax - xmin) / 1000) * img.naturalWidth;
+      const h = ((ymax - ymin) / 1000) * img.naturalHeight;
+
+      if (w <= 15 || h <= 15) {
+        resolve(null);
+        return;
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(w);
+      canvas.height = Math.round(h);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, x, y, w, h, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.88));
+    };
+    img.onerror = () => resolve(null);
+    img.src = base64Data;
+  });
+}
+
 async function generateQuizFromPhotos() {
   const photos = window.selectedPhotosBase64 || [];
-  if (photos.length === 0) {
-    alert("ઓછામાં ઓછો ૧ ફોટો પસંદ કરો.");
-    return;
-  }
+  if (photos.length === 0) return alert("ઓછામાં ઓછો ૧ ફોટો પસંદ કરો.");
 
   const btn = $("genBtn");
   btn.disabled = true;
-  btn.innerHTML = '<span class="loader"></span> AI પ્રશ્નો અને આકૃતિઓ બનાવે છે...';
-  setStatus("AI ફોટા વાંચીને પ્રશ્નો અને આકૃતિઓ તૈયાર કરી રહ્યું છે...");
+  btn.innerHTML = '<span class="loader"></span> AI પ્રશ્નો અને આકૃતિઓ તૈયાર કરે છે...';
+  setStatus("AI ફોટા વાંચીને અસલ આકૃતિઓ ક્રોપ કરી રહ્યું છે...");
 
   try {
     const response = await fetch(AI_ENDPOINT, {
@@ -272,46 +286,44 @@ async function generateQuizFromPhotos() {
     });
 
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "AI સર્વર વિનંતી નિષ્ફળ.");
+    if (!response.ok) throw new Error(payload.error || "AI વિનંતી નિષ્ફળ.");
 
     const rawQuestions = Array.isArray(payload.questions) ? payload.questions : [];
-    tempQuestions = rawQuestions.filter(q =>
-      q && typeof q.q === "string" && q.q.trim() &&
-      Array.isArray(q.o) && q.o.length === 4 &&
-      q.o.every(x => typeof x === "string" && x.trim()) &&
-      typeof q.a === "string" && q.o.includes(q.a)
-    ).map(q => ({
-      type: q.type || "NMMS",
-      q: q.q.trim(),
-      o: q.o.map(x => x.trim()),
-      a: q.a.trim(),
-      svg: q.has_diagram && q.svg ? q.svg : null
-    }));
+    const processed = [];
 
+    for (const q of rawQuestions) {
+      let cropped = null;
+      const idx = (Number.isInteger(q.photoIndex) && q.photoIndex >= 0 && q.photoIndex < photos.length) ? q.photoIndex : 0;
+      
+      if (q.has_diagram && q.box && photos[idx]) {
+        cropped = await cropDiagram(photos[idx], q.box);
+      }
+
+      processed.push({
+        type: q.type || "NMMS",
+        q: q.q.trim(),
+        o: q.o.map(x => x.trim()),
+        a: q.a.trim(),
+        img: cropped
+      });
+    }
+
+    tempQuestions = processed;
     renderReviewPanel();
     $("reviewBox").classList.remove("hidden");
     setStatus("AI એ " + tempQuestions.length + " માન્ય પ્રશ્નો આપ્યા. ચકાસો.");
   } catch (err) {
-    console.error(err);
-    alert("AI પ્રક્રિયામાં ભૂલ: " + err.message);
-    setStatus("❌ AI પ્રક્રિયા નિષ્ફળ.");
+    alert("ભૂલ: " + err.message);
+    setStatus("❌ પ્રક્રિયા નિષ્ફળ.");
   } finally {
     btn.textContent = "🚀 AI પાસે પ્રશ્નો બનાવો";
-    btn.disabled = !(window.selectedPhotosBase64 && window.selectedPhotosBase64.length > 0);
+    btn.disabled = false;
   }
 }
 
 function renderReviewPanel() {
   const container = $("reviewContent");
   container.replaceChildren();
-
-  if (!tempQuestions.length) {
-    const p = document.createElement("p");
-    p.textContent = "કોઈ માન્ય પ્રશ્નો મળ્યા નથી.";
-    p.style.color = "red";
-    container.appendChild(p);
-    return;
-  }
 
   tempQuestions.forEach((question, index) => {
     const card = document.createElement("div");
@@ -321,11 +333,11 @@ function renderReviewPanel() {
     heading.textContent = "પ્રશ્ન " + (index + 1) + " (" + question.type + ")";
     card.appendChild(heading);
 
-    if (question.svg) {
-      const svgBox = document.createElement("div");
-      svgBox.className = "svg-container";
-      svgBox.innerHTML = question.svg;
-      card.appendChild(svgBox);
+    if (question.img) {
+      const imgPreview = document.createElement("img");
+      imgPreview.src = question.img;
+      imgPreview.style.cssText = "display:block;max-width:100%;max-height:180px;margin:8px auto;border-radius:8px;border:1px solid #673ab7;object-fit:contain;background:#f9f9f9;";
+      card.appendChild(imgPreview);
     }
 
     const deleteBtn = document.createElement("button");
@@ -379,10 +391,7 @@ function addApprovedQuestions() {
     new Set(q.o).size === 4 && q.o.includes(q.a)
   );
 
-  if (!valid.length) {
-    alert("ઉમેરવા માટે માન્ય પ્રશ્નો નથી.");
-    return;
-  }
+  if (!valid.length) return alert("માન્ય પ્રશ્નો નથી.");
 
   masterQuestions.push(...valid);
   tempQuestions = [];
@@ -398,14 +407,8 @@ function addApprovedQuestions() {
 }
 
 async function publishGameToFirebase() {
-  if (!masterQuestions.length) {
-    alert("પહેલા પ્રશ્નો ઉમેરો.");
-    return;
-  }
-  if (!firebaseReady || !db) {
-    alert("Firebase કનેક્શન ઉપલબ્ધ નથી.");
-    return;
-  }
+  if (!masterQuestions.length) return alert("પહેલા પ્રશ્નો ઉમેરો.");
+  if (!firebaseReady || !db) return alert("Firebase કનેક્શન ઉપલબ્ધ નથી.");
 
   const btn = $("publishBtn");
   btn.disabled = true;
@@ -426,8 +429,7 @@ async function publishGameToFirebase() {
     $("finalBox").classList.add("hidden");
     setStatus("ગેમ સફળતાપૂર્વક સેવ થઈ.");
   } catch (err) {
-    console.error(err);
-    alert("Firebase માં ગેમ સેવ ન થઈ: " + err.message);
+    alert("સેવ ન થઈ: " + err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = "🎮 આખી ગેમ બનાવો (લિંક જનરેટ કરો)";
@@ -442,7 +444,7 @@ async function copyLink() {
   } catch {
     $("shareLink").focus();
     $("shareLink").select();
-    alert("લિંક પસંદ કરી છે. Copy વિકલ્પથી કોપી કરો.");
+    alert("લિંક કોપી કરો.");
   }
 }
 
@@ -453,32 +455,17 @@ window.addEventListener("load", async () => {
   $("teacherPanel").classList.add("hidden");
   $("studentPanel").classList.remove("hidden");
 
-  if (!firebaseReady || !db) {
-    alert("Firebase શરૂ થયું નથી.");
-    return;
-  }
-
   try {
     const snapshot = await getDoc(doc(db, "games", gameId));
-    if (!snapshot.exists()) {
-      alert("આ ગેમ મળી નથી.");
-      return;
-    }
+    if (!snapshot.exists()) return alert("આ ગેમ મળી નથી.");
 
-    const data = snapshot.data();
-    quiz = Array.isArray(data.questions) ? data.questions : [];
-    if (!quiz.length) {
-      alert("આ ગેમમાં પ્રશ્નો નથી.");
-      return;
-    }
-
+    quiz = snapshot.data().questions || [];
     current = score = wrong = 0;
     quizFinished = false;
     timeLeft = quiz.length * 60;
     startTimer();
     showQuestion();
   } catch (err) {
-    console.error(err);
     alert("ગેમ લોડ થઈ નથી: " + err.message);
   }
 });
@@ -518,13 +505,13 @@ function showQuestion() {
   $("progress").textContent = "પ્રશ્ન " + (current + 1) + "/" + quiz.length;
   $("q").textContent = quiz[current].q || "પ્રશ્ન ઉપલબ્ધ નથી.";
 
-  const diagramContainer = $("quizDiagram");
-  if (quiz[current].svg) {
-    diagramContainer.innerHTML = quiz[current].svg;
-    diagramContainer.classList.remove("hidden");
+  const image = $("quizImage");
+  if (quiz[current].img) {
+    image.src = quiz[current].img;
+    image.style.display = "inline-block";
   } else {
-    diagramContainer.replaceChildren();
-    diagramContainer.classList.add("hidden");
+    image.removeAttribute("src");
+    image.style.display = "none";
   }
 
   const options = $("opts");
@@ -572,7 +559,7 @@ function finishQuiz() {
 
   $("opts").replaceChildren();
   $("q").textContent = "ગેમ પૂર્ણ થઈ.";
-  $("quizDiagram").classList.add("hidden");
+  $("quizImage").style.display = "none";
   $("resultBox").classList.remove("hidden");
   $("finalScore").textContent = score + "/" + quiz.length;
   const percent = quiz.length ? Math.round(score / quiz.length * 100) : 0;
