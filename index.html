@@ -5,152 +5,96 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NMMS AI ગેમ જનરેટર</title>
 <style>
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body { margin: 0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; background: #1a1a2e; display: flex; justify-content: center; align-items: flex-start; padding: 15px 0; }
-.card { max-width: 680px; width: 96%; margin: 15px auto; padding: 22px; border-radius: 25px; border: 3px solid #fff; background: linear-gradient(120deg, #ff9a9e, #fad0c4, #a18cd1, #fbc2eb); background-size: 400% 400%; animation: flow 15s ease infinite; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; background: #1a1a2e; display: flex; justify-content: center; padding: 15px 0; }
+.card { max-width: 680px; width: 96%; padding: 22px; border-radius: 25px; border: 3px solid #fff; background: linear-gradient(120deg, #ff9a9e, #fad0c4, #a18cd1, #fbc2eb); background-size: 400% 400%; animation: flow 15s ease infinite; }
 @keyframes flow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 .hidden { display: none !important; }
 h1 { color: #4a148c; font-size: 19px; text-align: center; margin: 0 0 12px; }
-h2 { color: #4a148c; font-size: 16px; margin: 8px 0; }
-h3 { margin: 5px 0; font-size: 15px; }
 button { width: 100%; padding: 14px; margin: 6px 0; border-radius: 14px; border: none; font-size: 15px; font-weight: bold; cursor: pointer; color: #fff; transition: .2s; font-family: inherit; }
-button:active { transform: scale(0.98); }
-button:disabled { opacity: .5; cursor: not-allowed; }
+button:disabled { opacity: .5; }
 .btn-orange { background: #ff9800; }
-.btn-purple { background: linear-gradient(to right, #673ab7, #9c27b0); }
+.btn-purple { background: #673ab7; }
 .btn-green { background: #4caf50; }
 .btn-red { background: #d32f2f; }
-.btn-whatsapp { background: #25D366; }
-.btn-blue { background: #2196f3; }
 .photoBox { background: white; border: 3px dashed #673ab7; border-radius: 15px; padding: 15px; text-align: center; margin: 10px 0; }
 .preview-grid { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0; }
 .preview-item { position: relative; flex: 0 0 70px; }
 .preview-item img { height: 70px; width: 70px; border-radius: 8px; border: 2px solid #673ab7; object-fit: cover; }
-.preview-item .remove { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: #d32f2f; color: white; font-size: 14px; cursor: pointer; padding: 0; line-height: 20px; font-weight: bold; margin: 0; }
-.option { padding: 15px; margin: 8px 0; border-radius: 14px; background: #fff; cursor: pointer; border: 3px solid #e0e0e0; font-weight: 600; display: flex; justify-content: space-between; align-items: center; font-family: inherit; font-size: 16px; width: 100%; text-align: left; color: #333; }
-.option:hover:not(:disabled) { border-color: #673ab7; background: #f3e5f5; }
-.option.right { background: #2ecc71 !important; color: #fff !important; border-color: #2ecc71 !important; }
-.option.wrong { background: #e74c3c !important; color: #fff !important; border-color: #e74c3c !important; }
-#quizImage { max-width: 100%; max-height: 240px; border-radius: 12px; display: none; margin: 0 auto 10px; border: 2px solid #673ab7; background: #fff; object-fit: contain; }
-.loader { display: inline-block; width: 14px; height: 14px; border: 3px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; vertical-align: middle; margin-right: 6px; }
+.preview-item .remove { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: #d32f2f; color: white; border: none; cursor: pointer; }
+.option { padding: 15px; margin: 8px 0; border-radius: 14px; background: #fff; cursor: pointer; border: 3px solid #e0e0e0; font-size: 16px; width: 100%; text-align: left; color: #333; font-weight: bold;}
+.option.right { background: #2ecc71 !important; color: #fff !important; }
+.option.wrong { background: #e74c3c !important; color: #fff !important; }
+#quizImage { max-width: 100%; max-height: 240px; border-radius: 12px; display: none; margin: 0 auto 10px; border: 2px solid #673ab7; background: #fff; }
+.loader { display: inline-block; width: 14px; height: 14px; border: 3px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 6px; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.top { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 12px; color: #4a148c; font-size: 15px; }
+.top { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 12px; color: #4a148c; }
 #timer { background: #4a148c; color: #fff; padding: 6px 12px; border-radius: 20px; }
-#timer.warning { background: #d32f2f; animation: pulse 0.6s infinite alternate; }
-@keyframes pulse { from { opacity: 1; } to { opacity: 0.6; } }
-.q-card { background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #673ab7; font-size: 13px; }
-.q-card input[type="text"] { width: 100%; padding: 8px; margin: 4px 0; border: 1px solid #ccc; border-radius: 6px; font-family: inherit; font-size: 13px; }
-.q-card input[type="radio"] { width: auto; margin-right: 6px; }
-.q-card .opt-row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
-.q-card .opt-row input[type="text"] { flex: 1; }
-.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 14px 24px; border-radius: 12px; color: #fff; font-weight: bold; font-size: 14px; z-index: 10000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); max-width: 90%; }
-.toast-info { background: #2196f3; } .toast-success { background: #4caf50; } .toast-error { background: #d32f2f; } .toast-warn { background: #ff9800; }
-#shareLink { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid #673ab7; background: #fff; font-size: 12px; margin-bottom: 8px; font-family: monospace; }
-.sharePanel { background: #fff; padding: 18px; border-radius: 16px; margin: 12px 0; border: 3px solid #4caf50; text-align: center; }
-.share-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.share-buttons .full { grid-column: 1 / -1; }
-#qrBox { text-align: center; padding: 15px; background: #fff; border-radius: 12px; margin: 10px 0; }
-#qrBox canvas, #qrBox img { max-width: 200px; }
-.studentLogin { text-align: center; padding: 30px 20px; }
-.studentLogin input { width: 100%; padding: 14px; font-size: 16px; border-radius: 12px; border: 2px solid #673ab7; margin: 10px 0; font-family: inherit; text-align: center; }
-.scoreCard { background: #fff; padding: 25px; border-radius: 20px; text-align: center; border: 4px solid #4caf50; }
-.scoreCard .big-score { font-size: 48px; font-weight: bold; color: #2e7d32; margin: 10px 0; }
-.scoreCard .emoji { font-size: 60px; margin: 10px 0; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 14px 24px; border-radius: 12px; color: #fff; font-weight: bold; background: #333; z-index: 1000; }
+#shareLink { width: 100%; padding: 14px; border-radius: 12px; border: 2px solid #673ab7; font-size: 12px; margin-bottom: 8px; }
+.scoreCard { background: #fff; padding: 25px; border-radius: 20px; text-align: center; }
 </style>
 </head>
 <body>
 
 <div class="card" id="teacherPanel">
   <h1>📚 NMMS AI ગેમ જનરેટર</h1>
-  <div style="background:#fff3e0;padding:10px;border-radius:10px;font-size:13px;margin-bottom:10px;">
-    <b>સૂચના:</b> ફોટા પસંદ કરો → AI પ્રશ્નો બનાવશે → લિંક તૈયાર<br>
-    મંજૂર થયેલા પ્રશ્નો: <b id="totalQCount" style="color:red;font-size:16px;">0</b>
-  </div>
-
+  
   <div class="photoBox">
-    <p style="font-weight:bold;color:#673ab7;margin:0 0 10px;">📷 ફોટા પસંદ કરો (૧ થી ૮)</p>
-    <!-- File input ને થોડો દેખાય તેવો રાખ્યો છે જેથી બટન કામ ન કરે તો પણ ક્લિક થાય -->
-    <input type="file" id="photoInput" accept="image/*" multiple style="width:100%; padding:10px; margin-bottom:10px; border:2px solid #ff9800; border-radius:10px; background:#fff;">
+    <p style="font-weight:bold;color:#673ab7;">📷 ફોટા પસંદ કરો (૧ થી ૮)</p>
+    <!-- આ વખતે ફોટા પસંદ કરવાનું બટન સીધું જ દેખાશે -->
+    <input type="file" id="photoInput" accept="image/*" multiple style="width:100%; padding:12px; border-radius:10px; border:2px solid #ff9800; background:#fff; margin-bottom:10px;">
     <div id="photoPreview" class="preview-grid"></div>
-    <p id="photoStatus" aria-live="polite" style="font-size:12px;color:#d32f2f;font-weight:bold;margin-top:5px;"></p>
+    <p id="photoStatus" style="font-size:13px; font-weight:bold; color:#d32f2f;"></p>
   </div>
 
-  <button id="genBtn" class="btn-purple" type="button" disabled>🚀 AI પાસે પ્રશ્નો બનાવો</button>
-  <p id="status" style="text-align:center;font-size:13px;font-weight:bold;color:#333;min-height:20px;margin:6px 0;"></p>
+  <button id="genBtn" class="btn-purple" disabled>🚀 AI પાસે પ્રશ્નો બનાવો</button>
+  <p id="status" style="text-align:center;font-size:13px;font-weight:bold;"></p>
 
   <div id="reviewBox" class="hidden" style="margin-top:15px;background:#e8f5e9;padding:10px;border-radius:10px;">
     <p style="font-weight:bold;color:#2e7d32;">🔍 AI એ ઓળખેલા પ્રશ્નો:</p>
-    <div id="reviewContent" style="max-height:350px;overflow-y:auto;"></div>
-    <button class="btn-green" id="approveBtn" type="button" style="margin-top:10px;">➕ બધા મંજૂર કરો</button>
+    <div id="reviewContent" style="max-height:250px;overflow-y:auto;"></div>
+    <button class="btn-green" id="approveBtn" style="margin-top:10px;">➕ બધા મંજૂર કરો</button>
   </div>
 
   <div id="finalBox" class="hidden" style="margin-top:15px;">
-    <button class="btn-red" id="publishBtn" type="button" style="font-size:16px;">🎮 ગેમ બનાવો (લિંક + QR)</button>
+    <button class="btn-red" id="publishBtn">🎮 ગેમ બનાવો (લિંક બનાવો)</button>
   </div>
 
-  <div id="linkBox" class="hidden sharePanel">
-    <div style="font-size: 17px; font-weight: bold; color: #2e7d32; margin-bottom: 12px;">✅ ગેમ તૈયાર! હવે શેર કરો</div>
+  <div id="linkBox" class="hidden" style="margin-top:15px; background:#fff; padding:15px; border-radius:12px;">
+    <p style="color:#2e7d32; font-weight:bold;">✅ ગેમ તૈયાર છે! લિંક કોપી કરો:</p>
     <input type="text" id="shareLink" readonly>
-    <div class="share-buttons">
-      <button class="btn-green" id="copyBtn" type="button">📋 લિંક કોપી</button>
-      <button class="btn-whatsapp" id="whatsappBtn" type="button">💬 WhatsApp</button>
-      <button class="btn-blue full" id="qrBtn" type="button">📱 QR કોડ બતાવો</button>
-    </div>
-    <div id="qrBox" class="hidden">
-      <p style="font-weight:bold;color:#4a148c;">સ્કેન કરો:</p>
-      <div id="qrCode"></div>
-    </div>
+    <button class="btn-green" id="copyBtn">📋 લિંક કોપી કરો</button>
   </div>
 </div>
 
 <div class="card hidden" id="studentPanel">
-  <div id="loadingScreen" style="text-align:center;padding:40px 20px;">
-    <div style="font-size:50px;">🎮</div>
-    <h2 id="loadingText">ગેમ લોડ થઈ રહી છે...</h2>
-    <div class="loader" style="border-color:#4a148c;border-top-color:transparent;width:30px;height:30px;"></div>
-  </div>
-
-  <div id="nameScreen" class="studentLogin hidden">
-    <div style="font-size:60px;">👋</div>
+  <div id="nameScreen" style="text-align:center; padding:20px;">
     <h1>તમારું નામ શું છે?</h1>
-    <input type="text" id="studentName" placeholder="નામ લખો" maxlength="30">
-    <button class="btn-green" id="startQuizBtn" type="button" style="font-size:17px;">▶️ રમવાનું શરૂ કરો</button>
-    <p style="font-size: 11px; color: #666; margin-top:15px;">કુલ પ્રશ્નો: <b id="totalQ">0</b> | દરેક પ્રશ્ન માટે 60 સેકન્ડ</p>
+    <input type="text" id="studentName" style="width:100%; padding:14px; border-radius:10px; border:2px solid #673ab7; margin:10px 0; text-align:center; font-size:16px;">
+    <button class="btn-green" id="startQuizBtn">▶️ રમવાનું શરૂ કરો</button>
   </div>
 
   <div id="quizScreen" class="hidden">
-    <div class="top">
-      <div id="progress">પ્રશ્ન 1/0</div>
-      <div id="timer">⏱ 1:00</div>
-    </div>
-    <h3 id="q" style="margin:10px 0;font-size:17px;"></h3>
-    <div style="text-align:center;"><img id="quizImage" alt="આકૃતિ"></div>
+    <div class="top"><div id="progress"></div><div id="timer"></div></div>
+    <h3 id="q"></h3>
+    <img id="quizImage">
     <div id="opts"></div>
   </div>
 
-  <div id="resultBox" class="hidden">
-    <div class="scoreCard">
-      <div class="emoji" id="resultEmoji">🎉</div>
-      <h2 id="resultName">શાબાશ!</h2>
-      <div class="big-score" id="finalScore">0/0</div>
-      <p id="resultDetails" style="font-size:14px;margin-top:15px;color:#555;"></p>
-      <div style="margin-top:20px;">
-        <button class="btn-whatsapp" id="shareResultBtn" type="button">💬 શિક્ષકને સ્કોર મોકલો</button>
-        <button class="btn-purple" id="restartBtn" type="button">🔄 ફરી રમો</button>
-      </div>
-    </div>
+  <div id="resultBox" class="hidden scoreCard">
+    <h2 id="resultName"></h2>
+    <h1 id="finalScore" style="color:#2ecc71; font-size:50px; margin:10px 0;"></h1>
+    <button class="btn-purple" onclick="location.reload()">🔄 ફરી રમો</button>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// ==========================================
-// અહીં તમારી ImgBB API કી પેસ્ટ કરો
-// ==========================================
-const IMGBB_API_KEY = "તમારી_કી_અહીં_પેસ્ટ_કરો";
+// અહીં તમારી ImgBB કી પેસ્ટ કરો
+const IMGBB_API_KEY = "તમારી_કી_અહીં_પેસ્ટ_કરો"; 
 
 const firebaseConfig = {
   apiKey: "AIzaSyAfrlNECiB_hi60qmelL2b0EvNRNT-7RM4",
@@ -162,402 +106,198 @@ const firebaseConfig = {
 };
 
 const AI_ENDPOINT = "https://nmms-ai-backend.jarinarajpura1979.workers.dev";
-const MAX_PHOTOS = 8;
-const QUESTION_TIME = 60;
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-let db = null;
+let selectedPhotos = [];
 let tempQuestions = [];
 let masterQuestions = [];
 let quiz = [];
-let current = 0, score = 0, wrong = 0, timeLeft = 0;
-let timerId = null, answerTimeout = null;
-let isAnswered = false, quizFinished = false;
-let qIdCounter = 0;
-let selectedPhotos = [];
-let studentName = "";
-
+let current = 0, score = 0;
+let timerId = null, timeLeft = 0;
 const $ = id => document.getElementById(id);
 
-try {
-  const app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
-} catch (err) {
-  console.error("Firebase init error:", err);
+function showToast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(), 3000);
 }
 
-function showToast(message, type = "info", duration = 3000) {
-  const toast = document.createElement("div");
-  toast.className = `toast toast-${type}`;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), duration);
-}
-
-function setStatus(msg) { $("status").textContent = msg; }
-
-function shuffleArray(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function stripLabel(text) {
-  if (!text || typeof text !== "string") return "";
-  return text.replace(/^[\(\[]?[A-Da-d][\)\].\-:]\s*/, "").trim();
-}
-
-// ==========================================
-// ઇમેજ પ્રોસેસિંગ
-// ==========================================
-const input = $("photoInput");
-
-async function compressImage(file) {
-  let bitmap = await createImageBitmap(file).catch(() => null);
-  if (!bitmap) return null;
-  const scale = Math.min(1, 1400 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  if (bitmap.close) bitmap.close();
-  return canvas.toDataURL("image/jpeg", 0.82);
-}
-
-input.addEventListener("change", async (event) => {
-  const files = Array.from(event.target.files || []);
-  $("genBtn").disabled = true;
-  $("photoStatus").style.color = "#d32f2f";
-
-  if (files.length === 0) return;
-  if (files.length > MAX_PHOTOS) {
-    $("photoStatus").textContent = `❌ વધુમાં વધુ ${MAX_PHOTOS} ફોટા.`;
-    return;
-  }
-
+// ફોટા પસંદ કરવાનું લોજિક
+$("photoInput").addEventListener("change", async (e) => {
+  const files = Array.from(e.target.files);
+  if(files.length === 0) return;
+  if(files.length > 8) return showToast("વધુમાં વધુ 8 ફોટા પસંદ કરો.");
+  
   selectedPhotos = [];
-  $("photoPreview").replaceChildren();
+  $("photoPreview").innerHTML = "";
+  $("photoStatus").textContent = "ફોટા પ્રોસેસ થઈ રહ્યા છે...";
 
-  try {
-    for (let i = 0; i < files.length; i++) {
-      $("photoStatus").textContent = `ફોટા વાંચી રહ્યા છીએ... ${i + 1}/${files.length}`;
-      const dataUrl = await compressImage(files[i]);
-      if(dataUrl) selectedPhotos.push({ dataUrl });
+  for(let file of files) {
+    const dataUrl = await compressImage(file);
+    if(dataUrl) {
+      selectedPhotos.push({ dataUrl });
+      const img = document.createElement("img");
+      img.src = dataUrl; img.style.width="60px"; img.style.height="60px"; img.style.margin="5px"; img.style.borderRadius="5px";
+      $("photoPreview").appendChild(img);
     }
-    renderPhotoPreview();
-    $("photoStatus").style.color = "#2e7d32";
-    $("photoStatus").textContent = `✅ ${selectedPhotos.length} ફોટા તૈયાર.`;
-    $("genBtn").disabled = false;
-  } catch (err) {
-    $("photoStatus").textContent = "❌ ભૂલ: " + err.message;
-  } finally {
-    input.value = "";
   }
+  $("photoStatus").textContent = `✅ ${selectedPhotos.length} ફોટા તૈયાર.`;
+  $("genBtn").disabled = false;
 });
 
-function renderPhotoPreview() {
-  $("photoPreview").replaceChildren();
-  selectedPhotos.forEach((photo, idx) => {
-    const wrap = document.createElement("div");
-    wrap.className = "preview-item";
-    const img = document.createElement("img");
-    img.src = photo.dataUrl;
-    const btn = document.createElement("button");
-    btn.type = "button"; btn.className = "remove"; btn.textContent = "×";
-    btn.onclick = () => {
-      selectedPhotos.splice(idx, 1);
-      renderPhotoPreview();
-      if (selectedPhotos.length === 0) {
-        $("genBtn").disabled = true; $("photoStatus").textContent = "";
-      }
-    };
-    wrap.append(img, btn);
-    $("photoPreview").appendChild(wrap);
-  });
+async function compressImage(file) {
+  const bitmap = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
+  canvas.width = bitmap.width * scale; canvas.height = bitmap.height * scale;
+  canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.8);
 }
 
-function cropDiagram(base64Data, box) {
-  return new Promise((resolve) => {
-    if (!base64Data || !Array.isArray(box) || box.length !== 4) return resolve(null);
-    const img = new Image();
-    img.onload = () => {
-      let [ymin, xmin, ymax, xmax] = box.map(Number);
-      if ([ymin, xmin, ymax, xmax].some(v => !isFinite(v))) return resolve(null);
-      const padY = Math.round((ymax - ymin) * 0.02), padX = Math.round((xmax - xmin) * 0.04);
-      ymin = Math.max(0, ymin - padY); xmin = Math.max(0, xmin - padX);
-      ymax = Math.min(1000, ymax + padY); xmax = Math.min(1000, xmax + padX);
-      const x = (xmin / 1000) * img.naturalWidth, y = (ymin / 1000) * img.naturalHeight;
-      const w = ((xmax - xmin) / 1000) * img.naturalWidth, h = ((ymax - ymin) / 1000) * img.naturalHeight;
-      if (w <= 15 || h <= 15) return resolve(null);
-      const canvas = document.createElement("canvas");
-      canvas.width = w; canvas.height = h;
-      canvas.getContext("2d").drawImage(img, x, y, w, h, 0, 0, w, h);
-      resolve(canvas.toDataURL("image/jpeg", 0.88));
-    };
-    img.onerror = () => resolve(null);
-    img.src = base64Data;
-  });
-}
-
-// ==========================================
-// AI અને પબ્લિશ લોજિક
-// ==========================================
+// AI ને કોલ કરવો
 $("genBtn").addEventListener("click", async () => {
-  if (selectedPhotos.length === 0) return showToast("ફોટા પસંદ કરો.", "warn");
+  if(selectedPhotos.length === 0) return showToast("ફોટા પસંદ કરો.");
+  $("genBtn").innerHTML = '<span class="loader"></span> AI વાંચી રહ્યું છે...';
   $("genBtn").disabled = true;
-  $("genBtn").innerHTML = '<span class="loader"></span> AI કામ કરે છે...';
-  setStatus("AI ફોટા વાંચી રહ્યું છે...");
+  $("status").textContent = "AI ફોટા વાંચી રહ્યું છે...";
 
   try {
-    const payload = { images: selectedPhotos.map(p => ({ mimeType: "image/jpeg", data: p.dataUrl.split(",")[1] })) };
-    const response = await fetch(AI_ENDPOINT, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    const data = await response.json();
+    const res = await fetch(AI_ENDPOINT, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images: selectedPhotos.map(p => ({ mimeType: "image/jpeg", data: p.dataUrl.split(",")[1] })) })
+    });
+    const data = await res.json();
     
-    if (!response.ok) throw new Error(data.error || "AI ભૂલ");
-    if (!data.questions || data.questions.length === 0) throw new Error("કોઈ પ્રશ્નો મળ્યા નથી.");
-
-    tempQuestions = [];
-    for (const q of data.questions) {
-      if (!q.q || q.o.length !== 4) continue;
-      let img = null;
-      if (q.has_diagram && q.box && selectedPhotos[q.photoIndex]) {
-        img = await cropDiagram(selectedPhotos[q.photoIndex].dataUrl, q.box);
-      }
-      tempQuestions.push({ ...q, img, _id: ++qIdCounter });
-    }
-
-    if(tempQuestions.length === 0) throw new Error("માન્ય પ્રશ્નો નથી.");
-    renderReviewPanel();
+    if(!res.ok || !data.questions) throw new Error(data.error || "AI ભૂલ");
+    
+    tempQuestions = data.questions.map(q => ({ ...q, _id: Math.random() }));
+    renderReview();
     $("reviewBox").classList.remove("hidden");
-    setStatus(`AI એ ${tempQuestions.length} પ્રશ્નો આપ્યા.`);
-  } catch (err) {
-    showToast(err.message, "error");
-    setStatus("❌ નિષ્ફળ.");
+    $("status").textContent = `AI એ ${tempQuestions.length} પ્રશ્નો આપ્યા.`;
+  } catch(err) {
+    showToast(err.message);
+    $("status").textContent = "❌ નિષ્ફળ.";
   } finally {
     $("genBtn").textContent = "🚀 AI પાસે પ્રશ્નો બનાવો";
     $("genBtn").disabled = false;
   }
 });
 
-function renderReviewPanel() {
-  const container = $("reviewContent");
-  container.replaceChildren();
-  tempQuestions.forEach((q, index) => {
-    const card = document.createElement("div");
-    card.className = "q-card";
-    card.innerHTML = `<b>પ્રશ્ન ${index + 1}</b>`;
-    if (q.img) {
-      const img = document.createElement("img");
-      img.src = q.img; img.style.cssText = "display:block;max-height:150px;margin:8px auto;";
-      card.appendChild(img);
-    }
-    const qIn = document.createElement("input");
-    qIn.type = "text"; qIn.value = q.q;
-    qIn.onchange = () => q.q = qIn.value;
-    card.appendChild(qIn);
-    q.o.forEach((opt, i) => {
-      const row = document.createElement("div"); row.className = "opt-row";
-      const radio = document.createElement("input");
-      radio.type = "radio"; radio.name = `c_${q._id}`; radio.checked = opt === q.a;
-      radio.onchange = () => q.a = q.o[i];
-      const oIn = document.createElement("input");
-      oIn.type = "text"; oIn.value = opt;
-      oIn.onchange = () => { q.o[i] = oIn.value; if(q.a === opt) q.a = oIn.value; };
-      row.append(radio, oIn); card.appendChild(row);
-    });
-    container.appendChild(card);
+function renderReview() {
+  $("reviewContent").innerHTML = "";
+  tempQuestions.forEach((q, i) => {
+    const div = document.createElement("div");
+    div.style.background = "#fff"; div.style.padding = "10px"; div.style.marginBottom="5px"; div.style.borderRadius="5px";
+    div.innerHTML = `<b>Q${i+1}:</b> ${q.q} <br><i style="color:green">Answer: ${q.a}</i>`;
+    $("reviewContent").appendChild(div);
   });
 }
 
 $("approveBtn").addEventListener("click", () => {
-  const valid = tempQuestions.filter(q => q.q && q.o.every(Boolean) && q.o.includes(q.a));
-  masterQuestions.push(...valid.map(({ _id, ...rest }) => rest));
-  $("totalQCount").textContent = masterQuestions.length;
+  masterQuestions.push(...tempQuestions);
   $("reviewBox").classList.add("hidden");
   $("finalBox").classList.remove("hidden");
-  tempQuestions = []; selectedPhotos = []; $("photoPreview").replaceChildren();
+  showToast("પ્રશ્નો ઉમેરાયા!");
 });
 
-// ==========================================
-// ImgBB અપલોડ લોજિક
-// ==========================================
+// ગેમ સેવ કરવી (ImgBB સાથે)
 $("publishBtn").addEventListener("click", async () => {
-  if (masterQuestions.length === 0) return showToast("પ્રશ્નો ઉમેરો.", "warn");
-  if (IMGBB_API_KEY === "તમારી_કી_અહીં_પેસ્ટ_કરો" || !IMGBB_API_KEY) {
-    return showToast("કોડમાં ImgBB API કી પેસ્ટ કરો.", "error", 5000);
-  }
-
-  const btn = $("publishBtn");
-  btn.disabled = true;
-  btn.textContent = "ગેમ સેવ થઈ રહી છે...";
+  if(IMGBB_API_KEY === "તમારી_કી_અહીં_પેસ્ટ_કરો") return showToast("કોડમાં ImgBB કી પેસ્ટ કરો.");
+  $("publishBtn").textContent = "સેવ થઈ રહી છે...";
+  $("publishBtn").disabled = true;
 
   try {
     const gameRef = doc(collection(db, "games"));
     const gameId = gameRef.id;
 
-    const finalQuestions = await Promise.all(masterQuestions.map(async (q, i) => {
-      if (!q.img || !q.img.startsWith("data:")) return { ...q, img: q.img || null };
+    const finalQs = await Promise.all(masterQuestions.map(async (q) => {
+      if(!q.has_diagram || !q.box) return q;
+      // જો ઇમેજ હોય તો ક્રોપ કરીને ImgBB પર મોકલો
+      const croppedImg = await cropImage(selectedPhotos[q.photoIndex || 0].dataUrl, q.box);
+      if(!croppedImg) return q;
       
-      setStatus(`આકૃતિ ${i + 1}/${masterQuestions.length} અપલોડ...`);
       const formData = new FormData();
-      formData.append("image", q.img.split(",")[1]);
-      
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-        method: "POST",
-        body: formData
-      });
-      const imgData = await res.json();
-      if (!imgData.success) throw new Error("ImgBB અપલોડ નિષ્ફળ");
-      
+      formData.append("image", croppedImg.split(",")[1]);
+      const imgRes = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+      const imgData = await imgRes.json();
       return { ...q, img: imgData.data.url };
     }));
 
-    await setDoc(gameRef, { questions: finalQuestions, createdAt: new Date().toISOString() });
-
-    const shareUrl = `${window.location.origin}${window.location.pathname}?game=${gameId}`;
-    $("shareLink").value = shareUrl;
+    await setDoc(gameRef, { questions: finalQs });
+    
+    const link = window.location.origin + window.location.pathname + "?game=" + gameId;
+    $("shareLink").value = link;
     $("linkBox").classList.remove("hidden");
     $("finalBox").classList.add("hidden");
-    generateQR(shareUrl);
-    showToast("✅ ગેમ તૈયાર!", "success");
-  } catch (err) {
-    showToast("સેવ ન થઈ: " + err.message, "error", 5000);
+  } catch(err) {
+    showToast("એરર: " + err.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = "🎮 ગેમ બનાવો (લિંક + QR)";
+    $("publishBtn").textContent = "🎮 ગેમ બનાવો (લિંક બનાવો)";
+    $("publishBtn").disabled = false;
   }
 });
 
-// ==========================================
-// શેરિંગ અને QR
-// ==========================================
-async function generateQR(url) {
-  $("qrCode").replaceChildren();
-  const canvas = document.createElement("canvas");
-  await QRCode.toCanvas(canvas, url, { width: 200, margin: 2 });
-  $("qrCode").appendChild(canvas);
+function cropImage(dataUrl, box) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const [ymin, xmin, ymax, xmax] = box;
+      const canvas = document.createElement("canvas");
+      canvas.width = (xmax - xmin) / 1000 * img.width;
+      canvas.height = (ymax - ymin) / 1000 * img.height;
+      canvas.getContext("2d").drawImage(img, (xmin/1000)*img.width, (ymin/1000)*img.height, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg"));
+    };
+    img.src = dataUrl;
+  });
 }
-$("qrBtn").onclick = () => $("qrBox").classList.toggle("hidden");
-$("copyBtn").onclick = () => { navigator.clipboard.writeText($("shareLink").value); showToast("કોપી થયું!", "success"); };
-$("whatsappBtn").onclick = () => {
-  const text = `🎮 NMMS ગેમ રમો:\n${$("shareLink").value}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-};
 
-// ==========================================
+$("copyBtn").onclick = () => { navigator.clipboard.writeText($("shareLink").value); showToast("કોપી થયું!"); };
+
 // વિદ્યાર્થી લોજિક
-// ==========================================
-async function initGame() {
-  const gameId = new URLSearchParams(window.location.search).get("game");
-  if (!gameId) return;
-
+async function init() {
+  const id = new URLSearchParams(window.location.search).get("game");
+  if(!id) return;
   $("teacherPanel").classList.add("hidden");
   $("studentPanel").classList.remove("hidden");
-
-  try {
-    const gameDoc = await getDoc(doc(db, "games", gameId));
-    if (!gameDoc.exists()) throw new Error("ગેમ મળી નથી.");
-    
-    quiz = gameDoc.data().questions || [];
-    $("loadingScreen").classList.add("hidden");
-    $("nameScreen").classList.remove("hidden");
-    $("totalQ").textContent = quiz.length;
-  } catch (err) {
-    $("loadingText").textContent = "❌ " + err.message;
-  }
+  
+  const docSnap = await getDoc(doc(db, "games", id));
+  if(docSnap.exists()) quiz = docSnap.data().questions;
 }
 
 $("startQuizBtn").onclick = () => {
-  studentName = $("studentName").value.trim();
-  if (!studentName) return showToast("નામ લખો.", "warn");
   $("nameScreen").classList.add("hidden");
   $("quizScreen").classList.remove("hidden");
-  current = 0; score = 0; wrong = 0; quizFinished = false;
-  showQuestion();
+  showQ();
 };
 
-function startTimer() {
-  clearInterval(timerId);
-  timeLeft = QUESTION_TIME;
-  updateTimer();
-  timerId = setInterval(() => {
-    timeLeft--; updateTimer();
-    if (timeLeft <= 0) { clearInterval(timerId); checkAnswer(null, null); }
-  }, 1000);
-}
-
-function updateTimer() {
-  $("timer").textContent = `⏱ ${Math.floor(timeLeft/60)}:${String(timeLeft%60).padStart(2,"0")}`;
-  if (timeLeft <= 10) $("timer").classList.add("warning"); else $("timer").classList.remove("warning");
-}
-
-function showQuestion() {
-  if (current >= quiz.length) return finishQuiz();
-  clearInterval(timerId); isAnswered = false;
-  $("progress").textContent = `પ્રશ્ન ${current + 1}/${quiz.length}`;
-  $("q").textContent = quiz[current].q;
-  
-  const img = $("quizImage");
-  if (quiz[current].img) { img.src = quiz[current].img; img.style.display = "block"; }
-  else { img.style.display = "none"; }
-
-  $("opts").replaceChildren();
-  const isDiagram = Boolean(quiz[current].img);
-  const labels = ["(A)", "(B)", "(C)", "(D)"];
-  let opts = quiz[current].o.map(o => stripLabel(o));
-  if (!isDiagram) opts = shuffleArray(opts);
-
-  opts.forEach((text, i) => {
-    const btn = document.createElement("button");
-    btn.className = "option";
-    btn.textContent = `${labels[i]} ${text}`;
-    btn.onclick = () => checkAnswer(text, btn);
-    $("opts").appendChild(btn);
-  });
-  startTimer();
-}
-
-function checkAnswer(selected, btnElement) {
-  if (isAnswered) return;
-  isAnswered = true;
-  clearInterval(timerId);
-
-  const correct = stripLabel(quiz[current].a);
-  document.querySelectorAll(".option").forEach(b => b.disabled = true);
-
-  if (selected === correct) {
-    score++; if(btnElement) btnElement.classList.add("right");
-  } else {
-    wrong++; if(btnElement) btnElement.classList.add("wrong");
-    document.querySelectorAll(".option").forEach(b => {
-      if (b.textContent.includes(correct)) b.classList.add("right");
-    });
+function showQ() {
+  if(current >= quiz.length) {
+    $("quizScreen").classList.add("hidden");
+    $("resultBox").classList.remove("hidden");
+    $("finalScore").textContent = `${score}/${quiz.length}`;
+    return;
   }
+  $("progress").textContent = `પ્રશ્ન ${current+1}/${quiz.length}`;
+  $("q").textContent = quiz[current].q;
+  $("opts").innerHTML = "";
+  
+  if(quiz[current].img) { $("quizImage").src = quiz[current].img; $("quizImage").style.display = "block"; }
+  else $("quizImage").style.display = "none";
 
-  answerTimeout = setTimeout(() => { current++; showQuestion(); }, 1500);
+  quiz[current].o.forEach((opt, i) => {
+    const b = document.createElement("button");
+    b.className = "option"; b.textContent = opt;
+    b.onclick = () => {
+      if(opt === quiz[current].a) score++;
+      current++; showQ();
+    };
+    $("opts").appendChild(b);
+  });
 }
 
-function finishQuiz() {
-  quizFinished = true;
-  $("quizScreen").classList.add("hidden");
-  $("resultBox").classList.remove("hidden");
-  const percent = Math.round((score / quiz.length) * 100);
-  $("resultName").textContent = `શાબાશ, ${studentName}!`;
-  $("finalScore").textContent = `${score}/${quiz.length}`;
-  $("resultDetails").textContent = `ટકાવારી: ${percent}%`;
-  $("resultEmoji").textContent = percent >= 80 ? "🏆" : percent >= 50 ? "👍" : "📚";
-}
-
-$("shareResultBtn").onclick = () => {
-  const text = `📊 NMMS રિઝલ્ટ\n👤 નામ: ${studentName}\n✅ સ્કોર: ${score}/${quiz.length}`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-};
-
-$("restartBtn").onclick = () => location.reload();
-
-initGame();
+init();
 </script>
 </body>
 </html>
