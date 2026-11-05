@@ -151,7 +151,7 @@ import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstat
 // ==========================================
 // 1. અહીં તમારી ImgBB API કી પેસ્ટ કરો
 // ==========================================
-const IMGBB_API_KEY = "તમારી_કી_અહીં_પેસ્ટ_કરો";
+const IMGBB_API_KEY = if (IMGBB_API_KEY === "82580a0e88c08085e2ac2b322496bb16") {;
 
 const firebaseConfig = {
   apiKey: "AIzaSyAfrlNECiB_hi60qmelL2b0EvNRNT-7RM4",
