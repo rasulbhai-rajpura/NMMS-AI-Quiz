@@ -497,6 +497,12 @@ function updateTimerDisplay() {
   $("timer").textContent = "⏱ " + m + ":" + String(s).padStart(2, "0");
 }
 
+// આગળ લાગેલા (A), (B), A., B. જેવા લેબલ હટાવવાનું હેલ્પર ફંક્શન
+function stripLabel(text) {
+  if (!text) return "";
+  return text.replace(/^[\(\[]?[A-Da-d][\)\]\.\-:]\s*/, "").trim();
+}
+
 function showQuestion() {
   if (quizFinished) return;
   if (current >= quiz.length) return finishQuiz();
@@ -514,40 +520,79 @@ function showQuestion() {
     image.style.display = "none";
   }
 
-  const options = $("opts");
-  options.replaceChildren();
+  const optionsContainer = $("opts");
+  optionsContainer.replaceChildren();
 
-  // નિયમ: જો આકૃતિવાળો પ્રશ્ન હોય તો ઓપ્શન્સ ક્યારેય શફલ નહિ થાય, સીધા (A), (B), (C), (D) ક્રમમાં જ રહેશે
   const isDiagramQ = Boolean(quiz[current].img);
-  const displayOptions = isDiagramQ ? (quiz[current].o || []) : shuffleArray(quiz[current].o || []);
+  const labels = ["(A)", "(B)", "(C)", "(D)"];
 
-  displayOptions.forEach(option => {
+  let itemsToRender = [];
+
+  if (isDiagramQ) {
+    // આકૃતિવાળા પ્રશ્નોમાં મૂળ ઓપ્શન ક્રમ જાળવી રાખવો
+    itemsToRender = (quiz[current].o || []).map((rawText, idx) => ({
+      displayText: rawText,
+      rawValue: rawText
+    }));
+  } else {
+    // લખાણવાળા પ્રશ્નો: માત્ર અંદરનું લખાણ શફલ કરવું
+    const cleanTexts = (quiz[current].o || []).map(rawText => ({
+      cleanText: stripLabel(rawText),
+      rawValue: rawText
+    }));
+
+    const shuffledTexts = shuffleArray(cleanTexts);
+
+    // શફલ થયેલા લખાણ આગળ ક્રમશઃ (A), (B), (C), (D) જોડવું
+    itemsToRender = shuffledTexts.map((item, idx) => ({
+      displayText: `${labels[idx]} ${item.cleanText}`,
+      rawValue: item.rawValue
+    }));
+  }
+
+  itemsToRender.forEach(item => {
     const div = document.createElement("div");
     div.className = "option";
-    div.textContent = option;
-    div.addEventListener("click", () => checkAnswer(option, div));
-    options.appendChild(div);
+    div.textContent = item.displayText;
+    div.dataset.value = item.rawValue; // સાચા જવાબની ચકાસણી માટે મૂળ વેલ્યુ
+    div.addEventListener("click", () => checkAnswer(item.rawValue, div));
+    optionsContainer.appendChild(div);
   });
 }
 
-function checkAnswer(selected, element) {
+function checkAnswer(selectedValue, element) {
   if (isAnswered || quizFinished) return;
   isAnswered = true;
 
-  document.querySelectorAll(".option").forEach(node => node.style.pointerEvents = "none");
+  const allOptionNodes = document.querySelectorAll(".option");
+  allOptionNodes.forEach(node => node.style.pointerEvents = "none");
 
-  const correct = quiz[current].a;
-  if (selected === correct) {
+  const correctValue = quiz[current].a;
+
+  // સરખામણી કરતી વખતે આગળ-પાછળની સ્પેસ અને લેબલની ચોકસાઈ
+  const isMatch = selectedValue === correctValue || 
+                  stripLabel(selectedValue) === stripLabel(correctValue);
+
+  if (isMatch) {
     score++;
     element.classList.add("right");
   } else {
     wrong++;
     element.classList.add("wrong");
-    document.querySelectorAll(".option").forEach(node => {
-      if (node.textContent === correct) node.classList.add("right");
+    allOptionNodes.forEach(node => {
+      if (node.dataset.value === correctValue || 
+          stripLabel(node.dataset.value) === stripLabel(correctValue)) {
+        node.classList.add("right");
+      }
     });
   }
 
+  answerTimeout = setTimeout(() => {
+    if (quizFinished) return;
+    current++;
+    showQuestion();
+  }, 1200);
+}
   answerTimeout = setTimeout(() => {
     if (quizFinished) return;
     current++;
