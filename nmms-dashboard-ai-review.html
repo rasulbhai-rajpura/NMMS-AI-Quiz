@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NMMS Smart Exam - Question Bank</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f1f5f9;color:#1e293b}
+header{background:linear-gradient(120deg,#172554,#2563eb);color:white;padding:20px}
+header h2{margin:0 0 7px}
+header p{margin:0;font-size:14px}
+main{max-width:1150px;margin:22px auto;padding:12px}
+.panel{background:white;padding:20px;border-radius:12px;box-shadow:0 3px 12px #0001;margin-bottom:18px}
+h3{margin-top:0;color:#1d4ed8}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.field{margin-bottom:14px}
+label{display:block;font-weight:bold;margin-bottom:6px;font-size:14px}
+input,select,textarea{width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:7px;font-size:15px;background:white}
+textarea{min-height:85px;resize:vertical}
+button{border:0;border-radius:7px;padding:11px 17px;font-size:14px;cursor:pointer;margin:3px}
+.primary{background:#2563eb;color:white}
+.green{background:#15803d;color:white}
+.red{background:#dc2626;color:white}
+.gray{background:#475569;color:white}
+button:disabled{opacity:.5;cursor:not-allowed}
+.question{border:1px solid #e2e8f0;padding:15px;border-radius:9px;margin:12px 0}
+.question small{color:#64748b}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.option{background:#f1f5f9;padding:9px;border-radius:6px}
+#status{padding:12px;border-radius:7px;background:#eff6ff;margin-bottom:15px}
+#loginMessage{padding:30px;text-align:center}
+#figurePreview img{max-width:100%;max-height:220px;border:1px solid #ddd;margin-top:8px}
+.ai-card{border:1px solid #cbd5e1;border-radius:10px;padding:14px;margin:12px 0;background:#f8fafc}.ai-card textarea,.ai-card input{margin:4px 0}.ai-card .ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ai-card .ai-answer{max-width:180px}.ai-meta{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.ai-meta span{background:#e2e8f0;padding:6px 9px;border-radius:6px;font-size:13px}.ai-good{background:#dcfce7!important;color:#166534}.ai-note{color:#92400e;background:#fef3c7;padding:8px;border-radius:6px;margin:8px 0}
+.hidden{display:none}
+.actions{display:flex;flex-wrap:wrap;gap:5px}
+@media(max-width:600px){.options{grid-template-columns:1fr}main{padding:8px}.panel{padding:14px}}
+@media(max-width:600px){.options{grid-template-columns:1fr}main{padding:8px}.panel{padding:14px}}
+
+/* 👇 આ નવો ભાગ અહીં ઉમેરો 👇 */
+#cropModal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+#cropModal.hidden{display:none;}
+#cropContainer{position:relative;max-width:90vw;max-height:75vh;background:#fff;border:2px solid #fff;overflow:hidden;touch-action:none;}
+#cropImg{display:block;max-width:90vw;max-height:75vh;pointer-events:none;user-select:none;}
+#cropBox{position:absolute;border:2px dashed #ef4444;background:rgba(239,68,68,0.2);cursor:move;box-sizing:border-box;}
+/* ખૂણામાં દેખાતું લાલ ચિહ્ન (Resize Handle) */
+#cropBox::after{
+  content:''; 
+  position:absolute; 
+  bottom:-8px; 
+  right:-8px; 
+  width:20px; 
+  height:20px; 
+  background:#ef4444; 
+  border-radius:50%; 
+  cursor:se-resize; 
+  pointer-events:auto;
+  border: 2px solid white;
+  z-index: 10;
+}
+
+#cropControls{margin-top:15px;display:flex;gap:10px;}
+/* 👆 અહીં સુધી 👆 */
+</style>
+</head>
+<body>
+
+<header>
+<h2>NMMS SMART EXAM PORTAL</h2>
+<p>શ્રી પાનસડા અનુપમ પ્રા. શાળા | વાવ-થરાદ</p>
+</header>
+
+<main>
+<div id="loginMessage" class="panel">Firebase ચકાસણી ચાલુ છે...</div>
+
+<div id="app" class="hidden">
+<div class="panel">
+<h3>Admin Dashboard</h3>
+<p>શિક્ષક: <b id="teacherName">-</b></p>
+<p>શાળા: <b id="schoolName">-</b></p>
+<button class="red" id="logoutBtn">Logout</button>
+</div>
+
+<div id="status">પ્રશ્નબેંક તૈયાર છે.</div>
+
+<div class="panel">
+<h3 id="formTitle">નવો પ્રશ્ન ઉમેરો</h3>
+
+<form id="questionForm">
+<div class="grid">
+<div class="field">
+<label>વિભાગ</label>
+<select id="subject" required>
+<option value="MAT">MAT - માનસિક ક્ષમતા</option>
+<option value="SAT">SAT - શૈક્ષણિક ક્ષમતા</option>
+</select>
+</div>
+
+<div class="field">
+<label>ધોરણ</label>
+<select id="standard" required>
+<option value="8">ધોરણ 8</option>
+</select>
+</div>
+
+<div class="field">
+<label>વિષય</label>
+<select id="topic" required>
+<option value="માનસિક ક્ષમતા">માનસિક ક્ષમતા</option>
+<option value="ગણિત">ગણિત</option>
+<option value="વિજ્ઞાન">વિજ્ઞાન</option>
+<option value="સામાજિક વિજ્ઞાન">સામાજિક વિજ્ઞાન</option>
+<option value="ગુજરાતી">ગુજરાતી</option>
+<option value="અન્ય">અન્ય</option>
+</select>
+</div>
+
+<div class="field">
+<label>પ્રકરણ / પેટા વિભાગ</label>
+<input id="chapter" placeholder="પ્રકરણનું નામ" required>
+</div>
+</div>
+
+<div class="field">
+<label>પ્રશ્ન</label>
+<textarea id="questionText" placeholder="અહીં પ્રશ્ન લખો..." required></textarea>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>વિકલ્પ A</label>
+<input id="option0" required>
+</div>
+<div class="field">
+<label>વિકલ્પ B</label>
+<input id="option1" required>
+</div>
+<div class="field">
+<label>વિકલ્પ C</label>
+<input id="option2" required>
+</div>
+<div class="field">
+<label>વિકલ્પ D</label>
+<input id="option3" required>
+</div>
+</div>
+
+<div class="grid">
+<div class="field">
+<label>સાચો જવાબ</label>
+<select id="correctAnswer" required>
+<option value="0">A</option>
+<option value="1">B</option>
+<option value="2">C</option>
+<option value="3">D</option>
+</select>
+</div>
+<div class="field">
+<label>ગુણ</label>
+<input id="marks" type="number" min="1" max="10" value="1" required>
+</div>
+</div>
+
+<div class="field">
+<label>સમજૂતી</label>
+<textarea id="explanation" placeholder="સાચા જવાબની સમજૂતી લખો..."></textarea>
+</div>
+
+<div class="field">
+<label>આકૃતિ માટે SVG કોડ (વૈકલ્પિક)</label>
+<textarea id="figureSvg" placeholder="અહીં SVG કોડ મૂકો. આકૃતિ ન હોય તો ખાલી રાખો."></textarea>
+<div id="figurePreview"></div>
+</div>
+
+<div class="actions">
+<button type="submit" class="primary" id="saveBtn">પ્રશ્ન સેવ કરો</button>
+<button type="button" class="gray" id="clearBtn">નવો પ્રશ્ન</button>
+</div>
+</form>
+</div>
+
+<div class="panel" id="aiPanel">
+<h3>AI દ્વારા પુસ્તકમાંથી પ્રશ્નો બનાવો</h3>
+<p>એક વખતમાં 1 થી 3 ફોટા પસંદ કરો. AI પ્રશ્નો તૈયાર કરશે; શિક્ષકની મંજૂરી પહેલાં પ્રશ્નબેંકમાં સેવ નહીં થાય.</p>
+<div class="grid">
+  <div class="field">
+    <label>ફોટા પસંદ કરો (1–3)</label>
+    <input id="aiImages" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+  </div>
+  <div class="field">
+    <label>કેમેરાથી ફોટો લો</label>
+    <input id="aiCamera" type="file" accept="image/*" capture="environment" multiple>
+  </div>
+  <div class="field">
+    <label>વિભાગ</label>
+    <select id="aiSubject"><option value="MAT">MAT - માનસિક ક્ષમતા</option><option value="SAT">SAT - શૈક્ષણિક ક્ષમતા</option></select>
+  </div>
+  <div class="field">
+    <label>વિષય</label>
+    <select id="aiTopic"><option value="માનસિક ક્ષમતા">માનસિક ક્ષમતા</option><option value="ગણિત">ગણિત</option><option value="વિજ્ઞાન">વિજ્ઞાન</option><option value="સામાજિક વિજ્ઞાન">સામાજિક વિજ્ઞાન</option><option value="ગુજરાતી">ગુજરાતી</option><option value="અન્ય">અન્ય</option></select>
+  </div>
+  <div class="field">
+    <label>પ્રકરણ / પેટા વિભાગ</label>
+    <input id="aiChapter" placeholder="પ્રકરણનું નામ" required>
+  </div>
+</div>
+<div class="actions">
+  <button type="button" class="primary" id="generateAiBtn">AI પ્રશ્નો બનાવો</button>
+  <button type="button" class="gray" id="clearAiBtn">પસંદ કરેલા ફોટા સાફ કરો</button>
+</div>
+<div id="aiStatus" role="status" style="margin-top:12px"></div>
+<div id="aiReviewList"></div>
+<div class="actions" id="aiApproveActions" style="display:none">
+  <button type="button" class="green" id="saveApprovedBtn">પસંદ કરેલા મંજૂર પ્રશ્નો પ્રશ્નબેંકમાં સેવ કરો</button>
+  <button type="button" class="primary" id="createQuizFromSelectedBtn">🎯 આ જ પ્રશ્નોની ક્વિઝ બનાવો</button>
+</div>
+</div>
+
+<div class="panel">
+<h3>પ્રશ્નબેંક</h3>
+<div class="grid">
+<div class="field">
+<label>વિભાગ પ્રમાણે જુઓ</label>
+<select id="filterSubject">
+<option value="ALL">બધા પ્રશ્નો</option>
+<option value="MAT">MAT</option>
+<option value="SAT">SAT</option>
+</select>
+</div>
+<div class="field">
+<label>પ્રશ્ન શોધો</label>
+<input id="searchText" placeholder="પ્રશ્ન અથવા પ્રકરણ શોધો">
+</div>
+</div>
+
+<!-- 👇 આ નવું બટન અહીં ઉમેરો 👇 -->
+<div style="margin-top: 15px; text-align: right;">
+  <button type="button" class="primary" id="createQuizFromBankBtn" style="background:#8b5cf6; font-weight:bold; padding:12px 20px;">🎯 છેલ્લે સેવ થયેલા પ્રશ્નોની ગેમ બનાવો</button>
+</div>
+
+<div id="questionList">પ્રશ્નો લોડ થઈ રહ્યા છે...</div>
+</div>
+</div>
+</main>
+<!-- Manual Crop Modal -->
+<div id="cropModal" class="hidden">
+  <h3 style="color:white;margin:0 0 10px;">માઉસથી ખેંચીને યોગ્ય ભાગ પસંદ કરો</h3>
+  <div id="cropContainer">
+    <img id="cropImg" src="" alt="Crop Source">
+    <div id="cropBox"></div>
+  </div>
+  <div id="cropControls">
+    <button type="button" class="green" id="saveCropBtn">ક્રોપ સેવ કરો</button>
+    <button type="button" class="red" id="cancelCropBtn">કેન્સલ</button>
+  </div>
+</div>
+<script type="module">
+import { auth, db } from "./firebase.js";
+
+import {
+ onAuthStateChanged,
+ signOut
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+import {
+ collection,
+ query,
+ where,
+ doc,
+ getDoc,
+ getDocs,
+ addDoc,
+ updateDoc,
+ deleteDoc,
+ writeBatch,
+ serverTimestamp
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const $ = id => document.getElementById(id);
+
+let currentUser = null;
+let editingId = null;
+let allQuestions = [];
+const AI_WORKER_URL = "https://nmms-ai-backend.jarinarajpura1979.workers.dev/";
+let aiDrafts = [];
+let aiSourceImages = [];
+
+// ક્રોપિંગ માટેના વેરીએબલ્સ
+let cropTargetIndex = null;
+let isDragging = false, startX = 0, startY = 0, startBox = {x:0,y:0,w:0,h:0};
+let isResizing = false;
+
+// પેજ રિફ્રેશ થાય તો પણ પ્રશ્નોની ID સેવ રહે તે માટે
+if(!window.lastSavedQuestionIds) {
+    const saved = localStorage.getItem("lastSavedQuestionIds");
+    if(saved) window.lastSavedQuestionIds = JSON.parse(saved);
+}
+
+function message(text, error=false){
+ const el = $("status");
+ if(el) {
+   el.textContent = text;
+   el.style.background = error ? "#fee2e2" : "#eff6ff";
+   el.style.color = error ? "#991b1b" : "#1e40af";
+ }
+}
+
+function setAiStatus(text, error=false){
+  const el = $("aiStatus");
+  if(el) {
+    el.textContent = text;
+    el.style.color = error ? "#991b1b" : "#1e40af";
+  }
+}
+
+function selectedAiFiles(){
+  const a = Array.from($("aiImages")?.files || []);
+  const b = Array.from($("aiCamera")?.files || []);
+  return [...a, ...b];
+}
+
+function fileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("ફોટો વાંચી શકાયો નથી."));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ================= AI પ્રશ્નો બનાવવાનું ફંક્શન =================
+async function generateAiQuestions(){
+  const files = selectedAiFiles();
+  if(files.length < 1 || files.length > 3){
+    setAiStatus("એક સાથે 1 થી 3 ફોટા પસંદ કરો.",true); return;
+  }
+  if(!$("aiChapter")?.value.trim()){
+    setAiStatus("પ્રકરણનું નામ લખો.",true); return;
+  }
+  const btn = $("generateAiBtn");
+  if(btn) btn.disabled = true;
+  aiDrafts = [];
+  if($("aiReviewList")) $("aiReviewList").innerHTML = "";
+  if($("aiApproveActions")) $("aiApproveActions").style.display = "none";
+  
+  try{
+    setAiStatus("ફોટા તૈયાર થઈ રહ્યા છે...");
+    const images = await Promise.all(files.map(async file => ({data: await fileToDataUrl(file)})));
+    aiSourceImages = images.map(x => x.data);
+    
+    const token = await currentUser.getIdToken(true);
+    setAiStatus("AI પ્રશ્નો વાંચી રહ્યું છે. થોડો સમય રાહ જુઓ...");
+    
+    const response = await fetch(AI_WORKER_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},
+      body:JSON.stringify({images})
+    });
+    const result = await response.json().catch(()=>({}));
+    
+    if(!response.ok || result.success !== true){
+      throw new Error((result.error || "Server Error") );
+    }
+    
+    aiDrafts = (result.questions || []).map((q,i)=>({
+      id:`ai-${i}-${Date.now()}`,
+      q:q.question || q.q || "",
+      o:Array.isArray(q.options)?q.options:(Array.isArray(q.o)?q.o:["","","",""]),
+      a:q.correctAnswer || q.a || "",
+      has_diagram:q.hasDiagram===true || q.has_diagram===true,
+      box:q.diagramBox || q.box || null,
+      questionBox:q.questionBox || null,
+      photoIndex:Number.isInteger(q.photoIndex)?q.photoIndex:0,
+      shortTrick:q.shortTrick || "",
+      solutionSteps:q.solutionSteps || "",
+      confidence:Number.isFinite(Number(q.confidence))?Math.max(0,Math.min(100,Number(q.confidence))):0,
+      autoApproved:q.autoApproved===true,
+      needsReview:q.needsReview===true,
+      reviewReason:q.reviewReason || "",
+      cropDataUrl:null,
+      selected:q.autoApproved===true
+    }));
+    
+    if(!aiDrafts.length) throw new Error("AI તરફથી કોઈ પ્રશ્ન મળ્યો નથી.");
+    setAiStatus("AI પ્રશ્નોના અલગ Crop તૈયાર કરી રહ્યું છે...");
+    
+    await Promise.all(aiDrafts.map(async q => { q.cropDataUrl = await cropQuestionFromSource(q); }));
+    
+    renderAiDrafts();
+  }catch(error){
+    setAiStatus("AI પ્રક્રિયામાં ભૂલ: "+error.message,true);
+  }finally{if(btn) btn.disabled=false;}
+}
+
+// AI ઓટો ક્રોપ ફંક્શન
+async function cropQuestionFromSource(q){
+  if(!q.questionBox || !aiSourceImages[q.photoIndex]) return null;
+  const img = new Image();
+  const loaded = new Promise((resolve,reject)=>{
+    img.onload = resolve;
+    img.onerror = () => reject(new Error("મૂળ ફોટો વાંચી શકાયો નથી."));
+  });
+  img.src = aiSourceImages[q.photoIndex];
+  await loaded;
+  
+  let [y1, x1, y2, x2] = q.questionBox;
+  const padTop = 30;    
+  const padBottom = 80; 
+  const padLeft = 20;   
+  const padRight = 120; 
+  
+  y1 = Math.max(0, y1 - padTop);
+  y2 = Math.min(1000, y2 + padBottom);
+  x1 = Math.max(0, x1 - padLeft);
+  x2 = Math.min(1000, x2 + padRight);
+
+  const sx = Math.floor(img.naturalWidth * x1 / 1000);
+  const sy = Math.floor(img.naturalHeight * y1 / 1000);
+  const ex = Math.ceil(img.naturalWidth * x2 / 1000);
+  const ey = Math.ceil(img.naturalHeight * y2 / 1000);
+  
+  const w = ex - sx, h = ey - sy;
+  if(w < 20 || h < 20) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d",{alpha:false});
+  ctx.drawImage(img, sx, sy, w, h, 0, 0, w, h);
+  return canvas.toDataURL("image/jpeg", 0.92);
+}
+
+// ================= પ્રશ્નોની યાદી દેખાડવાનું ફંક્શન =================
+function renderAiDrafts(){
+  const host = $("aiReviewList"); if(!host) return;
+  host.innerHTML = "";
+  aiDrafts.forEach((q,index)=>{
+    const card = document.createElement("section"); card.className="ai-card";
+    
+    const title = document.createElement("h4");
+    title.textContent = `પ્રશ્ન ${index+1} | ફોટો ${q.photoIndex+1}`;
+    card.appendChild(title);
+
+    if(q.cropDataUrl){
+      const cropImg = document.createElement("img");
+      cropImg.src = q.cropDataUrl;
+      cropImg.style.cssText = "display:block;max-width:100%;max-height:360px;border:1px solid #94a3b8;border-radius:8px;background:white;margin:8px 0;";
+      card.appendChild(cropImg);
+
+      const adjustBtn = document.createElement("button");
+      adjustBtn.type = "button";
+      adjustBtn.className = "primary";
+      adjustBtn.style.marginBottom = "10px";
+      adjustBtn.textContent = "✂️ જાતે ક્રોપ કરો (Manual)";
+      adjustBtn.onclick = () => openManualCrop(index, q);
+      card.appendChild(adjustBtn);
+      
+    } else {
+      const cropWarn = document.createElement("div");
+      cropWarn.className = "ai-note";
+      cropWarn.textContent = "આ પ્રશ્નનું Auto-Crop સ્થાન મળ્યું નથી.";
+      card.appendChild(cropWarn);
+    }
+
+    const checkLabel = document.createElement("label");
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.checked = q.selected;
+    check.addEventListener("change", () => { q.selected = check.checked; });
+    checkLabel.append(check, document.createTextNode(" ચકાસ્યા પછી આ પ્રશ્ન સેવ કરવા પસંદ કરો"));
+    card.appendChild(checkLabel);
+
+    const qLabel = document.createElement("label"); qLabel.textContent = "પ્રશ્ન"; card.appendChild(qLabel);
+    const qInput = document.createElement("textarea"); qInput.value = q.q;
+    qInput.addEventListener("input", () => q.q = qInput.value); card.appendChild(qInput);
+
+    q.o.forEach((value, j) => {
+      const label = document.createElement("label");
+      label.textContent = `વિકલ્પ ${"ABCD"[j]}`;
+      card.appendChild(label);
+      const input = document.createElement("input");
+      input.value = value;
+      input.addEventListener("input", () => q.o[j] = input.value);
+      card.appendChild(input);
+    });
+
+    const answerLabel = document.createElement("label");
+    answerLabel.textContent = "સાચો જવાબ";
+    card.appendChild(answerLabel);
+    const answer = document.createElement("select"); answer.className = "ai-answer";
+    answer.add(new Option("જવાબ પસંદ કરો","")); ["A","B","C","D"].forEach(letter => answer.add(new Option(letter, letter)));
+    answer.value = q.a;
+    answer.addEventListener("change", () => q.a = answer.value);
+    card.appendChild(answer);
+
+    const trickLabel = document.createElement("label");
+    trickLabel.textContent = "ટૂંકી રીત";
+    card.appendChild(trickLabel);
+    const trick = document.createElement("textarea");
+    trick.value = q.shortTrick;
+    trick.addEventListener("input", () => q.shortTrick = trick.value);
+    card.appendChild(trick);
+
+    const stepsLabel = document.createElement("label");
+    stepsLabel.textContent = "ઉકેલનાં પગલાં";
+    card.appendChild(stepsLabel);
+    const steps = document.createElement("textarea");
+    steps.value = q.solutionSteps;
+    steps.addEventListener("input", () => q.solutionSteps = steps.value);
+    card.appendChild(steps);
+
+    host.appendChild(card);
+  });
+  if($("aiApproveActions")) $("aiApproveActions").style.display = aiDrafts.length ? "flex" : "none";
+}
+
+// ================= Manual Crop Logic =================
+function openManualCrop(index, q) {
+  if(!aiSourceImages[q.photoIndex]) return;
+  cropTargetIndex = index;
+  
+  const modal = $("cropModal");
+  const img = $("cropImg");
+  const box = $("cropBox");
+  
+  img.src = aiSourceImages[q.photoIndex];
+  modal.classList.remove("hidden");
+  
+  img.onload = () => {
+    const rect = img.getBoundingClientRect();
+    let w = rect.width * 0.6;
+    let h = rect.height * 0.4;
+    let x = (rect.width - w) / 2;
+    let y = (rect.height - h) / 2;
+    
+    box.style.width = w + "px";
+    box.style.height = h + "px";
+    box.style.left = x + "px";
+    box.style.top = y + "px";
+    
+    startBox = { x: x, y: y, w: w, h: h };
+  };
+}
+
+const cropContainer = $("cropContainer");
+const cropBoxEl = $("cropBox");
+
+if (cropContainer) {
+    cropContainer.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      const rect = cropBoxEl.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      
+      if(clickX > rect.width - 35 && clickY > rect.height - 35) {
+          isResizing = true;
+          isDragging = false;
+      } else {
+          isDragging = true;
+          isResizing = false;
+          cropBoxEl.style.cursor = "grabbing";
+      }
+      
+      startX = e.clientX;
+      startY = e.clientY;
+      startBox = { 
+        x: parseFloat(cropBoxEl.style.left) || 0, 
+        y: parseFloat(cropBoxEl.style.top) || 0,
+        w: parseFloat(cropBoxEl.style.width) || 0,
+        h: parseFloat(cropBoxEl.style.height) || 0
+      };
+    });
+}
+
+window.addEventListener("pointermove", (e) => {
+  if(!isDragging && !isResizing) return;
+  e.preventDefault();
+  
+  let dx = e.clientX - startX;
+  let dy = e.clientY - startY;
+  
+  const img = $("cropImg");
+  if (!img) return;
+  const maxW = img.getBoundingClientRect().width;
+  const maxH = img.getBoundingClientRect().height;
+
+  if (isDragging) {
+      let newX = Math.max(0, Math.min(startBox.x + dx, maxW - startBox.w));
+      let newY = Math.max(0, Math.min(startBox.y + dy, maxH - startBox.h));
+      cropBoxEl.style.left = newX + "px";
+      cropBoxEl.style.top = newY + "px";
+  } else if (isResizing) {
+      let newW = Math.max(50, Math.min(startBox.w + dx, maxW - startBox.x));
+      let newH = Math.max(50, Math.min(startBox.h + dy, maxH - startBox.y));
+      cropBoxEl.style.width = newW + "px";
+      cropBoxEl.style.height = newH + "px";
+  }
+});
+
+window.addEventListener("pointerup", () => {
+  isDragging = false;
+  isResizing = false;
+  if (cropBoxEl) cropBoxEl.style.cursor = "move";
+});
+
+if ($("cancelCropBtn")) {
+    $("cancelCropBtn").onclick = () => {
+      $("cropModal").classList.add("hidden");
+    };
+}
+
+if ($("saveCropBtn")) {
+    $("saveCropBtn").onclick = () => {
+      const img = $("cropImg");
+      const box = $("cropBox");
+      
+      const imgRect = img.getBoundingClientRect();
+      const boxLeft = parseFloat(box.style.left) || 0;
+      const boxTop = parseFloat(box.style.top) || 0;
+      const boxW = parseFloat(box.style.width) || 0;
+      const boxH = parseFloat(box.style.height) || 0;
+      
+      const scaleX = img.naturalWidth / imgRect.width;
+      const scaleY = img.naturalHeight / imgRect.height;
+      
+      const sx = boxLeft * scaleX;
+      const sy = boxTop * scaleY;
+      const ex = boxW * scaleX;
+      const ey = boxH * scaleY;
+      
+      const canvas = document.createElement("canvas");
+      canvas.width = ex;
+      canvas.height = ey;
+      const ctx = canvas.getContext("2d", { alpha: false });
+      ctx.drawImage(img, sx, sy, ex, ey, 0, 0, ex, ey);
+      
+      const newDataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      if(cropTargetIndex !== null && aiDrafts[cropTargetIndex]) {
+        aiDrafts[cropTargetIndex].cropDataUrl = newDataUrl;
+        renderAiDrafts();
+      }
+      
+      $("cropModal").classList.add("hidden");
+      setAiStatus("મેન્યુઅલ ક્રોપ સફળ રીતે અપડેટ થયું!", false);
+    };
+}
+
+// ================= પ્રશ્નો સેવ કરવાનું ફંક્શન =================
+async function saveApprovedAiQuestions(){
+  const selected = aiDrafts.filter(q => q.selected);
+  if(!selected.length){ setAiStatus("સેવ કરવા માટે ઓછામાં ઓછો એક પ્રશ્ન પસંદ કરો.", true); return; }
+  const subject = $("aiSubject")?.value, topic = $("aiTopic")?.value, chapter = $("aiChapter")?.value.trim();
+  
+  const btn = $("saveApprovedBtn"); if(btn) btn.disabled = true;
+  try{
+    const batch = writeBatch(db);
+    const savedIds = [];
+
+    for(const q of selected){
+      const questionRef = doc(collection(db,"questions"));
+      batch.set(questionRef, {
+        subject, standard:8, topic, chapter,
+        question:q.q.trim(), options:q.o.map(x => String(x).trim()),
+        correctAnswer:"ABCD".indexOf(q.a), marks:1,
+        explanation:String(q.solutionSteps || "").trim(),
+        shortTrick:String(q.shortTrick || "").trim(),
+        solutionSteps:String(q.solutionSteps || "").trim(),
+        aiConfidence:q.confidence, aiAutoApproved:q.autoApproved === true,
+        schoolId: window.currentSchoolId || "school-pansada-anupam",
+        createdBy: currentUser.uid, approvedBy: currentUser.uid,
+        approvalStatus:"approved",
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+      });
+      
+      savedIds.push(questionRef.id);
+    }
+    
+    await batch.commit();
+    
+    window.lastSavedQuestionIds = savedIds;
+    localStorage.setItem("lastSavedQuestionIds", JSON.stringify(savedIds));
+    
+    setAiStatus(`${selected.length} મંજૂર પ્રશ્નો સેવ થયા. હવે તમે તેમની ક્વિઝ બનાવી શકો છો.`);
+    
+    aiDrafts = []; 
+    if($("aiReviewList")) $("aiReviewList").innerHTML = "";
+    if($("aiApproveActions")) $("aiApproveActions").style.display = "none";
+    
+    await loadQuestions();
+  }catch(error){
+    setAiStatus("પ્રશ્નો સેવ થયા નથી: " + error.message, true);
+  }finally{ if(btn) btn.disabled = false; }
+}
+
+// ================= ગેમ લિંક બનાવવાનું ફંક્શન =================
+async function generateQuizLink() {
+    if(!window.lastSavedQuestionIds || window.lastSavedQuestionIds.length === 0) {
+        alert("કૃપા કરીને પહેલા પ્રશ્નો સેવ કરો. કોઈ પ્રશ્નો મળ્યા નથી.");
+        return;
+    }
+
+    const btn1 = $("createQuizFromSelectedBtn");
+    const btn2 = $("createQuizFromBankBtn");
+    if(btn1) btn1.disabled = true;
+    if(btn2) btn2.disabled = true;
+    setAiStatus("નવા પ્રશ્નોની ક્વિઝ બની રહી છે...");
+
+    try {
+      const baseUrl = window.location.origin + window.location.pathname.replace("index.html", "").replace("dashboard.html", "").replace("nmms-dashboard-ai-review.html", "");
+      const testId = "test_" + Date.now();
+      
+      await addDoc(collection(db, "tests"), {
+        testId: testId,
+        schoolId: window.currentSchoolId || "school-pansada-anupam",
+        createdBy: currentUser.uid,
+        createdAt: serverTimestamp(),
+        status: "active",
+        questionIds: window.lastSavedQuestionIds 
+      });
+
+      const testLink = `${baseUrl}exam.html?id=${testId}`;
+
+      setAiStatus(`ક્વિઝ સફળતાપૂર્વક બની ગઈ છે!`);
+      
+      const modal = document.createElement("div");
+      modal.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;";
+      modal.innerHTML = `
+        <div style="background:white;padding:20px;border-radius:10px;max-width:500px;width:90%;text-align:center;">
+          <h3 style="color:#15803d;margin-top:0;">✅ ગેમ સફળતાપૂર્વક બની ગઈ!</h3>
+          <p>કુલ <b>${window.lastSavedQuestionIds.length}</b> નવા પ્રશ્નોની ગેમ બની છે.</p>
+          <p>આ લિંક કોપી કરીને બાળકોને મોકલો:</p>
+          <input type="text" value="${testLink}" style="width:100%;padding:10px;margin:10px 0;border:1px solid #ccc;border-radius:5px;" readonly onclick="this.select()">
+          <button type="button" class="primary" onclick="this.parentElement.parentElement.remove()">બંધ કરો</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+    } catch (error) {
+      setAiStatus("ભૂલ આવી: " + error.message, true);
+    } finally {
+      if(btn1) btn1.disabled = false;
+      if(btn2) btn2.disabled = false;
+    }
+}
+
+// ================= બાકીના ઇવેન્ટ લિસનર્સ =================
+if($("generateAiBtn")) $("generateAiBtn").addEventListener("click", generateAiQuestions);
+if($("saveApprovedBtn")) $("saveApprovedBtn").addEventListener("click", saveApprovedAiQuestions);
+if($("createQuizFromSelectedBtn")) $("createQuizFromSelectedBtn").addEventListener("click", generateQuizLink);
+if($("createQuizFromBankBtn")) $("createQuizFromBankBtn").addEventListener("click", generateQuizLink);
+
+if($("clearAiBtn")) $("clearAiBtn").addEventListener("click", () => {
+  if($("aiImages")) $("aiImages").value = ""; 
+  if($("aiCamera")) $("aiCamera").value = "";
+  setAiStatus("ફોટા દૂર કર્યા.");
+});
+
+function previewSvg(){
+ const svg = $("figureSvg")?.value.trim();
+ const box = $("figurePreview");
+ if(!box) return;
+ box.innerHTML = "";
+ if(!svg) return;
+
+ if(!/^<svg/i.test(svg) || !/<\/svg>/i.test(svg)){
+   box.textContent = "માન્ય SVG કોડ આપો.";
+   return;
+ }
+
+ const img = document.createElement("img");
+ img.alt = "આકૃતિ Preview";
+ img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+ box.appendChild(img);
+}
+if($("figureSvg")) $("figureSvg").addEventListener("input", previewSvg);
+
+function resetForm(){
+ if($("questionForm")) $("questionForm").reset();
+ if($("marks")) $("marks").value = 1;
+ if($("figurePreview")) $("figurePreview").innerHTML = "";
+ editingId = null;
+ if($("formTitle")) $("formTitle").textContent = "નવો પ્રશ્ન ઉમેરો";
+ if($("saveBtn")) $("saveBtn").textContent = "પ્રશ્ન સેવ કરો";
+}
+
+if($("questionForm")) {
+  $("questionForm").addEventListener("submit", async event => {
+   event.preventDefault();
+   if(!currentUser) return;
+
+   const data = {
+     subject: $("subject")?.value,
+     standard: Number($("standard")?.value),
+     topic: $("topic")?.value,
+     chapter: $("chapter")?.value.trim(),
+     question: $("questionText")?.value.trim(),
+     options: [$("option0")?.value.trim(), $("option1")?.value.trim(), $("option2")?.value.trim(), $("option3")?.value.trim()],
+     correctAnswer: Number($("correctAnswer")?.value),
+     marks: Number($("marks")?.value),
+     explanation: $("explanation")?.value.trim(),
+     figureSvg: $("figureSvg")?.value.trim(),
+     updatedAt: serverTimestamp()
+   };
+
+   if($("saveBtn")) $("saveBtn").disabled = true;
+   try{
+     if(editingId){
+       await updateDoc(doc(db,"questions",editingId), data);
+       message("પ્રશ્નમાં સુધારો સેવ થયો.");
+     }else{
+       data.createdBy = currentUser.uid;
+       data.schoolId = window.currentSchoolId || "school-pansada-anupam";
+       data.approvalStatus = "approved";
+       data.approvedBy = currentUser.uid;
+       data.createdAt = serverTimestamp();
+       await addDoc(collection(db,"questions"), data);
+       message("નવો પ્રશ્ન સફળતાપૂર્વક સેવ થયો.");
+     }
+     resetForm();
+     await loadQuestions();
+   }catch(error){
+     message("સેવ કરવામાં ભૂલ: " + error.message, true);
+   }finally{
+     if($("saveBtn")) $("saveBtn").disabled = false;
+   }
+  });
+}
+
+if($("clearBtn")) $("clearBtn").addEventListener("click", resetForm);
+if($("filterSubject")) $("filterSubject").addEventListener("change", renderQuestions);
+if($("searchText")) $("searchText").addEventListener("input", renderQuestions);
+
+async function loadQuestions(){
+ if($("questionList")) $("questionList").textContent = "પ્રશ્નો લોડ થઈ રહ્યા છે...";
+ try{
+   const snap = await getDocs(query(collection(db,"questions"), where("schoolId","==", window.currentSchoolId)));
+   allQuestions = [];
+   snap.forEach(item => {
+     const data = item.data();
+     if(data.recordType !== "system"){
+       allQuestions.push({id:item.id, ...data});
+     }
+   });
+   renderQuestions();
+ }catch(error){
+   if($("questionList")) $("questionList").textContent = "પ્રશ્નો લોડ થયા નથી: " + error.message;
+ }
+}
+
+function renderQuestions(){
+ const filter = $("filterSubject")?.value || "ALL";
+ const search = $("searchText")?.value.trim().toLowerCase() || "";
+ const rows = allQuestions.filter(q => {
+   const subjectOK = filter === "ALL" || q.subject === filter;
+   const searchOK = !search || String(q.question || "").toLowerCase().includes(search) || String(q.chapter || "").toLowerCase().includes(search);
+   return subjectOK && searchOK;
+ });
+
+ if(!$("questionList")) return;
+ $("questionList").innerHTML = "";
+ if(rows.length === 0){ $("questionList").textContent = "હાલ કોઈ પ્રશ્ન મળ્યો નથી."; return; }
+
+ rows.forEach(q => {
+   const card = document.createElement("div"); card.className = "question";
+   const heading = document.createElement("b");
+   heading.textContent = `${q.subject || ""} | ${q.topic || ""} | ${q.chapter || ""}`;
+   card.appendChild(heading);
+   const p = document.createElement("p"); p.textContent = q.question || ""; card.appendChild(p);
+   
+   const options = document.createElement("div"); options.className = "options";
+   (q.options || []).forEach((option, i) => {
+     const item = document.createElement("div"); item.className = "option"; item.textContent = `${"ABCD"[i]}. ${option}`;
+     options.appendChild(item);
+   });
+   card.appendChild(options);
+   
+   const answer = document.createElement("small");
+   answer.textContent = `સાચો જવાબ: ${"ABCD"[q.correctAnswer] || "-"} | ગુણ: ${q.marks || 1}`;
+   card.appendChild(answer);
+   $("questionList").appendChild(card);
+ });
+}
+
+if($("logoutBtn")) {
+  $("logoutBtn").addEventListener("click", async () => {
+   try{ await signOut(auth); window.location.replace("./index.html"); }catch(error){}
+  });
+}
+
+onAuthStateChanged(auth, async user => {
+ if(!user){ window.location.replace("./index.html"); return; }
+ currentUser = user;
+ try{
+   const teacherSnap = await getDoc(doc(db,"teachers",user.uid));
+   if(!teacherSnap.exists()){ await signOut(auth); window.location.replace("./index.html"); return; }
+   const teacher = teacherSnap.data();
+   window.currentSchoolId = teacher.schoolId || "";
+   if(teacher.active !== true || teacher.role !== "admin"){ await signOut(auth); window.location.replace("./index.html"); return; }
+
+   if($("teacherName")) $("teacherName").textContent = teacher.name || "શિક્ષક";
+   if($("schoolName")) $("schoolName").textContent = teacher.schoolId || "-";
+   if($("loginMessage")) $("loginMessage").classList.add("hidden");
+   if($("app")) $("app").classList.remove("hidden");
+   await loadQuestions();
+ }catch(error){}
+});
+</script>
+</body>
+</html>

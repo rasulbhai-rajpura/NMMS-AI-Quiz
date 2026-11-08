@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isActiveTeacher() {
+      return isSignedIn()
+        && exists(
+          /databases/$(database)/documents/teachers/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/teachers/$(request.auth.uid)
+        ).data.active == true;
+    }
+
+    match /teachers/{teacherId} {
+      allow read: if isActiveTeacher()
+                  && request.auth.uid == teacherId;
+      allow write: if false;
+    }
+
+    match /schools/{schoolId} {
+      allow read: if isActiveTeacher()
+        && get(
+          /databases/$(database)/documents/teachers/$(request.auth.uid)
+        ).data.schoolId == schoolId;
+
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

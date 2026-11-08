@@ -1,0 +1,142 @@
+
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NMMS Firebase Login Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      padding: 30px;
+      text-align: center;
+    }
+    .box {
+      max-width: 400px;
+      margin: 40px auto;
+      padding: 25px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 3px 15px #0002;
+    }
+    input, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px;
+      margin: 9px 0;
+      border-radius: 7px;
+      font-size: 16px;
+    }
+    input { border: 1px solid #bbb; }
+    button {
+      background: #155eef;
+      color: white;
+      border: 0;
+      cursor: pointer;
+    }
+    #status { margin-top: 18px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <h2>NMMS Smart Exam</h2>
+    <h3>શિક્ષક લોગિન ટેસ્ટ</h3>
+
+    <input id="email" type="email"
+      placeholder="શિક્ષકનો Email">
+
+    <input id="password" type="password"
+      placeholder="Password">
+
+    <button id="loginBtn">Login કરો</button>
+    <button id="logoutBtn" hidden>Logout</button>
+
+    <p id="status">Firebase Login માટે તૈયાર</p>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./firebase.js";
+
+    import {
+      signInWithEmailAndPassword,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+    import {
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+    const status = document.getElementById("status");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    loginBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        status.textContent = "Email અને Password દાખલ કરો.";
+        return;
+      }
+
+      loginBtn.disabled = true;
+      status.textContent = "Login ચકાસણી ચાલુ છે...";
+
+      try {
+        const credential = await signInWithEmailAndPassword(
+          auth, email, password
+        );
+
+        const user = credential.user;
+
+        status.textContent = "Login સફળ. શિક્ષકની માહિતી તપાસી રહ્યા છીએ...";
+
+        const teacherRef = doc(db, "teachers", user.uid);
+        const teacherSnap = await getDoc(teacherRef);
+
+        if (!teacherSnap.exists()) {
+          status.textContent =
+            "Login સફળ, પરંતુ Firestore માં આ UID માટે શિક્ષકની નોંધ મળી નથી.";
+          return;
+        }
+
+        const teacher = teacherSnap.data();
+
+        if (teacher.active !== true) {
+          status.textContent =
+            "શિક્ષકનું એકાઉન્ટ નિષ્ક્રિય છે. Administrator નો સંપર્ક કરો.";
+          return;
+        }
+
+        status.textContent =
+          "સફળતા! Firebase Authentication અને Firestore બંને કાર્યરત છે.\n" +
+          "શિક્ષક: " + (teacher.name || "નામ ઉપલબ્ધ નથી") +
+          "\nRole: " + (teacher.role || "અજ્ઞાત");
+
+        logoutBtn.hidden = false;
+
+      } catch (error) {
+        console.error(error);
+        status.textContent =
+          "Login અથવા Firestore Error: " + error.code;
+      } finally {
+        loginBtn.disabled = false;
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        status.textContent = "Logout સફળ.";
+        logoutBtn.hidden = true;
+      } catch (error) {
+        status.textContent = "Logout Error: " + error.code;
+      }
+    });
+  </script>
+
+</body>
+</html>

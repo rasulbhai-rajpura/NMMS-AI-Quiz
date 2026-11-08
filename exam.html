@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NMMS Exam - Game</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);color:#1e293b;min-height:100vh;display:flex;flex-direction:column;}
+  header{background:rgba(255, 255, 255, 0.1);backdrop-filter:blur(10px);color:white;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 4px 6px rgba(0,0,0,0.1);border-bottom:1px solid rgba(255,255,255,0.2);}
+  header h2{margin:0;font-size:22px;letter-spacing:1px;text-shadow:1px 1px 2px rgba(0,0,0,0.3);}
+  .timer-box{background:rgba(220, 38, 38, 0.9);color:white;padding:8px 20px;border-radius:30px;font-weight:bold;font-size:20px;box-shadow:0 4px 10px rgba(220,38,38,0.4);}
+  main{flex:1;max-width:900px;margin:30px auto;padding:15px;width:100%;}
+  .panel{background:rgba(255, 255, 255, 0.95);padding:30px;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,0.2);}
+  .q-text{font-size:22px;font-weight:600;margin-bottom:25px;line-height:1.5;color:#1e3a8a;}
+  .options{display:flex;flex-direction:column;gap:15px;}
+  .option-btn{background:#f8fafc;border:2px solid #e2e8f0;padding:16px 20px;border-radius:12px;font-size:18px;cursor:pointer;text-align:left;transition:all 0.2s ease;font-weight:500;}
+  .option-btn:hover{background:#eff6ff;border-color:#93c5fd;transform:translateY(-2px);box-shadow:0 4px 6px rgba(0,0,0,0.05);}
+  .option-btn.selected{background:#dbeafe;border-color:#3b82f6;font-weight:bold;}
+  .option-btn.correct{background:#dcfce7;border-color:#22c55e;color:#166534;font-weight:bold;transform:scale(1.02);}
+  .option-btn.wrong{background:#fee2e2;border-color:#ef4444;color:#991b1b;}
+  .actions{display:flex;justify-content:space-between;margin-top:30px;align-items:center;}
+  button.main-btn{border:0;border-radius:12px;padding:14px 30px;font-size:18px;font-weight:bold;cursor:pointer;background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);color:white;box-shadow:0 4px 15px rgba(37,99,235,0.4);transition:transform 0.1s;}
+  button.main-btn:hover{transform:scale(1.05);}
+  button.main-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+  .result-box{text-align:center;padding:20px;}
+  .result-score{font-size:50px;font-weight:800;color:#2563eb;margin:20px 0;text-shadow:1px 1px 3px rgba(0,0,0,0.1);}
+  .progress-bar{height:8px;background:#e2e8f0;border-radius:4px;margin-bottom:30px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg, #3b82f6, #8b5cf6);transition:width 0.3s ease;}
+  #loading{text-align:center;padding:50px;font-size:20px;color:white;font-weight:bold;}
+  .count-badge{background:#f1f5f9;color:#475569;padding:8px 16px;border-radius:20px;font-weight:bold;}
+</style>
+</head>
+<body>
+
+<header>
+  <h2>NMMS SMART EXAM 🎮</h2>
+  <div class="timer-box" id="timerDisplay" style="display:none;">00:00</div>
+</header>
+
+<main>
+  <div id="loading" style="text-align:center; margin-top:50px; font-size:20px; color:white;">ક્વિઝ લોડ થઈ રહી છે. કૃપા કરીને રાહ જુઓ...</div>
+
+  <div id="quizArea" style="display:none;">
+    <div class="panel">
+      <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%;"></div></div>
+      <div class="q-text" id="questionText">પ્રશ્ન અહીં આવશે...</div>
+      <div class="options" id="optionsContainer"></div>
+      <div class="actions">
+        <span class="count-badge" id="questionCount">પ્રશ્ન 1/10</span>
+        <button class="main-btn" id="nextBtn" disabled>આગળ વધો ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultArea" class="panel" style="display:none;">
+    <div class="result-box">
+      <h2 style="color:#15803d;font-size:32px;">🎉 પરીક્ષા પૂર્ણ થઈ!</h2>
+      <p style="font-size:18px;color:#64748b;">તમારું પરિણામ નીચે મુજબ છે:</p>
+      <div class="result-score" id="finalScore">0 / 0</div>
+      <div style="display:flex;justify-content:center;gap:30px;margin-top:20px;">
+        <p style="font-size:18px;">સાચા જવાબો: <br><b id="correctCount" style="color:#15803d;font-size:28px;">0</b></p>
+        <p style="font-size:18px;">ખોટા જવાબો: <br><b id="wrongCount" style="color:#dc2626;font-size:28px;">0</b></p>
+      </div>
+      <button class="main-btn" style="margin-top:30px;" onclick="window.location.reload()">ફરીથી રમો</button>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { db } from "./firebase.js";
+import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js";
+
+const urlParams = new URLSearchParams(window.location.search);
+const testId = urlParams.get('id');
+
+let questions = [];
+let currentQIndex = 0;
+let score = 0;
+let wrongScore = 0;
+let timerInterval;
+let timeLeft = 30 * 60; // 30 મિનિટ
+
+function startTimer() {
+  const display = document.getElementById("timerDisplay");
+  display.style.display = "block";
+  
+  timerInterval = setInterval(() => {
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      finishQuiz();
+      return;
+    }
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+    const s = (timeLeft % 60).toString().padStart(2, '0');
+    display.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+async function loadQuiz() {
+  if (!testId) {
+    document.getElementById("loading").innerHTML = "<span style='color:red'>ભૂલ: કોઈ ટેસ્ટ ID મળી નથી. લિંક ખોટી છે.</span>";
+    return;
+  }
+
+  try {
+    document.getElementById("loading").innerHTML = "ટેસ્ટ ડેટા ચેક થઈ રહ્યો છે...";
+    
+    const testSnap = await getDocs(query(collection(db, "tests"), where("testId", "==", testId)));
+    if (testSnap.empty) throw new Error("આ ટેસ્ટ ડેટાબેઝમાં મળી નથી.");
+    
+    const testData = testSnap.docs[0].data();
+    const questionIds = testData.questionIds || [];
+
+    if (questionIds.length === 0) throw new Error("આ ટેસ્ટમાં કોઈ પ્રશ્નો નથી.");
+
+    document.getElementById("loading").innerHTML = `પ્રશ્નો લોડ થઈ રહ્યા છે (${questionIds.length})...`;
+
+    const fetchedQuestions = [];
+    for (let qId of questionIds) {
+      const qSnap = await getDoc(doc(db, "questions", qId));
+      if (qSnap.exists()) {
+        fetchedQuestions.push({ id: qSnap.id, ...qSnap.data() });
+      }
+    }
+
+    questions = fetchedQuestions;
+    
+    if(questions.length === 0) throw new Error("પ્રશ્નો મળ્યા નથી.");
+    
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("quizArea").style.display = "block";
+    
+    renderQuestion();
+    startTimer();
+
+  } catch (error) {
+    document.getElementById("loading").innerHTML = `<span style="color:#ffcccc; background:#991b1b; padding:10px; border-radius:5px;">ભૂલ: ${error.message}</span>`;
+    console.error(error);
+  }
+}
+
+function renderQuestion() {
+  const q = questions[currentQIndex];
+  
+  const progress = ((currentQIndex) / questions.length) * 100;
+  document.getElementById("progressBar").style.width = progress + "%";
+  document.getElementById("questionCount").textContent = `પ્રશ્ન ${currentQIndex + 1}/${questions.length}`;
+  
+  document.getElementById("questionText").textContent = q.question;
+  let existingImg = document.getElementById("qDiagram");
+  if (existingImg) existingImg.remove(); // જૂની ઈમેજ કાઢી નાખો
+  
+  if (q.questionImg) {
+    const img = document.createElement("img");
+    img.id = "qDiagram";
+    img.src = q.questionImg;
+    img.style.cssText = "display:block; max-width:100%; max-height:250px; border-radius:8px; margin: 0 auto 20px auto; border: 1px solid #cbd5e1; object-fit: contain; background: white;";
+    // પ્રશ્નના લખાણ પછી ઈમેજ દાખલ કરો
+    document.getElementById("questionText").insertAdjacentElement('afterend', img);
+  }
+  const optionsContainer = document.getElementById("optionsContainer");
+  optionsContainer.innerHTML = "";
+  
+  const nextBtn = document.getElementById("nextBtn");
+  nextBtn.disabled = true;
+  nextBtn.textContent = (currentQIndex === questions.length - 1) ? "પરીક્ષા પૂર્ણ કરો" : "આગળ વધો ➔";
+
+  q.options.forEach((opt, index) => {
+    const btn = document.createElement("button");
+    btn.className = "option-btn";
+    btn.textContent = `${["A", "B", "C", "D"][index]}. ${opt}`;
+    btn.onclick = () => selectOption(btn, index, q.correctAnswer);
+    optionsContainer.appendChild(btn);
+  });
+}
+
+function selectOption(btn, selectedIndex, correctAnswer) {
+  const allBtns = document.querySelectorAll(".option-btn");
+  allBtns.forEach(b => {
+    b.disabled = true;
+    b.style.cursor = "default";
+  });
+
+  if (selectedIndex === correctAnswer) {
+    btn.classList.add("correct");
+    score++;
+  } else {
+    btn.classList.add("wrong");
+    allBtns[correctAnswer].classList.add("correct");
+    wrongScore++;
+  }
+
+  document.getElementById("nextBtn").disabled = false;
+}
+
+document.getElementById("nextBtn").onclick = () => {
+  currentQIndex++;
+  if (currentQIndex < questions.length) {
+    renderQuestion();
+  } else {
+    finishQuiz();
+  }
+};
+
+function finishQuiz() {
+  clearInterval(timerInterval);
+  document.getElementById("quizArea").style.display = "none";
+  document.getElementById("timerDisplay").style.display = "none";
+  
+  document.getElementById("resultArea").style.display = "block";
+  document.getElementById("finalScore").textContent = `${score} / ${questions.length}`;
+  document.getElementById("correctCount").textContent = score;
+  document.getElementById("wrongCount").textContent = wrongScore;
+}
+
+loadQuiz();
+
+</script>
+</body>
+</html>
